@@ -1,0 +1,11 @@
+#ifndef GAME_OF_LIFE_GLOBAL_MACROS_H
+#define GAME_OF_LIFE_GLOBAL_MACROS_H
+
+#define WINDOW_WIDTH 1200
+#define WINDOW_HEIGHT 900
+#define GRID_SIZE 30
+#define SLEEP_DURATION 1000
+#define DEAD_CELL_COLOR sf::Color(128, 128, 128)
+#define LIVE_CELL_COLOR sf::Color::Red
+
+#endif
