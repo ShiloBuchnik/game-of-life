@@ -48,7 +48,10 @@ namespace Patterns{
         extern std::vector<sf::Vector2i> simkin_glider_gun;
     }
 
-    void patternToGrid(std::vector< std::vector<sf::RectangleShape> >& grid, const std::vector<sf::Vector2i>& points);
+    extern std::vector < std::vector<sf::Vector2i>* > numToPattern;
+
+    // Takes a grid and a vector of points (each point is a grid coordinate), and color fill those grids
+    void putPatternInGrid(std::vector< std::vector<sf::RectangleShape> >& grid, const std::vector<sf::Vector2i>& points);
 }
 
 #endif

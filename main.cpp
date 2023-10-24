@@ -1,11 +1,10 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
-#include <windows.h>
-#include <vector>
 #include "game_logic.h"
+#include "patterns.h"
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Game of life", sf::Style::Default);
+    short int mode_num = introduction();
 
     // Create the grid of cells (not displaying it yet)
     std::vector< std::vector<sf::RectangleShape> > grid;
@@ -21,9 +20,13 @@ int main() {
         grid.push_back(row);
     }
 
-    getUserInput(window, grid, WINDOW_WIDTH, WINDOW_HEIGHT, GRID_SIZE);
+    sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Game of life", sf::Style::Default);
+    //sf::View view(sf::Vector2f(WINDOW_HEIGHT / 2, WINDOW_WIDTH / 2), sf::Vector2f(WINDOW_HEIGHT, WINDOW_WIDTH));
 
-    long unsigned int gen = 0;
+    if (mode_num == 1) getUserInput(window, grid, WINDOW_WIDTH, WINDOW_HEIGHT, GRID_SIZE); // Free mode
+    else Patterns::putPatternInGrid(grid, *Patterns::numToPattern[mode_num]); // Pre-defined pattern
+
+    long long int gen = 0;
     while (window.isOpen()) {
         sf::Event evnt;
         while (window.pollEvent(evnt)) {
@@ -43,19 +46,26 @@ int main() {
 
                     // The grid "restarts" when user presses 'Enter'
                     if (evnt.key.code == sf::Keyboard::Enter) blankGrid(grid);
+
+                    /*if (evnt.key.code == sf::Keyboard::D){
+                        view.move(50, 50);
+                        window.setView(view);
+                    }
                     break;
 
                 case sf::Event::Resized:
                     {
                         sf::FloatRect visibleArea(0.f, 0.f, evnt.size.width, evnt.size.height);
                         window.setView(sf::View(visibleArea));
-                    }
+                    } */
             }
         }
 
         updateGrid(grid);
         gen++;
+        std::cout << "Generation: " << gen << std::endl;
 
+        sf::sleep(sf::milliseconds(SLEEP_DURATION));
         window.clear();
         // If we got to a blank grid, that means we need to start again and ask for user's input
         if ( drawGrid(window, grid, GRID_SIZE) ){
@@ -63,8 +73,6 @@ int main() {
             gen = 0;
         }
         window.display();
-        std::cout << "Generation: " << gen << std::endl;
-        sf::sleep(sf::milliseconds(SLEEP_DURATION));
     }
 
     return 0;

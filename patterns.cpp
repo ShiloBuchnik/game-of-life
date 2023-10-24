@@ -83,7 +83,16 @@ namespace Patterns{
                                                        {20,18}, {21,19}, {22,19}, {23,19}, {23,20}};
     }
 
-    void patternToGrid(std::vector< std::vector<sf::RectangleShape> >& grid, const std::vector<sf::Vector2i>& points){
+    // Maps the numbers in [2-28] to their respective variable in the namespace
+    std::vector < std::vector<sf::Vector2i>* > numToPattern =
+        {nullptr, nullptr, &StillLifes::block, &StillLifes::bee_hive, &StillLifes::honey_farm, &StillLifes::loaf, &StillLifes::bakery,
+         &StillLifes::boat, &StillLifes::ship, &StillLifes::tub, &Oscillators::blinker, &Oscillators::toad, &Oscillators::beacon,
+         &Oscillators::pulsar, &Oscillators::penta_decathlon, &Oscillators::cross, &Oscillators::star, &Oscillators::clock,
+         &Oscillators:: koks_galaxy, &Oscillators::octagon, &Oscillators::french_kiss, &Oscillators::fumarole, &Oscillators::pentoad,
+        &Spaceships::glider, &Spaceships::light_weight_spaceship, &Spaceships::middle_weight_spaceship, &Spaceships::heavy_weight_spaceship,
+        &Guns::gosper_glider_gun, &Guns::simkin_glider_gun};
+
+    void putPatternInGrid(std::vector< std::vector<sf::RectangleShape> >& grid, const std::vector<sf::Vector2i>& points){
         sf::Vector2i center_of_mass = centerOfMass(points);
 
         for (auto point : points){

@@ -7,8 +7,9 @@
 #define GRID_SIZE 30
 #define DEAD_CELL_COLOR sf::Color(128, 128, 128)
 #define LIVE_CELL_COLOR sf::Color::Red
-#define SLEEP_DURATION 750
+#define SLEEP_DURATION 500
 
+short int introduction();
 void getUserInput(sf::RenderWindow& window, std::vector< std::vector<sf::RectangleShape> >& grid,
                   int window_width, int window_height, int grid_size);
 void blankGrid(std::vector< std::vector<sf::RectangleShape> >& grid);

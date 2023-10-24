@@ -1,7 +1,61 @@
 #include <SFML/Graphics.hpp>
-#include <vector>
 #include <iostream>
+#include <limits>
 #include "game_logic.h"
+
+// Returns number chosen by user.
+short int introduction(){
+    std::cout << "Welcome to 'game of life'. Below are starting modes:\n" << std::endl;
+    std::cout << "1. Free mode\n" << std::endl;
+
+    std::cout << "StillLifes patterns:" << std::endl;
+    std::cout << "2. Block" << std::endl;
+    std::cout << "3. Bee hive" << std::endl;
+    std::cout << "4. Honey farm" << std::endl;
+    std::cout << "5. Loaf" << std::endl;
+    std::cout << "6. Bakery" << std::endl;
+    std::cout << "7. Boat" << std::endl;
+    std::cout << "8. Ship" << std::endl;
+    std::cout << "9. Tub\n" << std::endl;
+
+    std::cout << "Oscillators patterns:" << std::endl;
+    std::cout << "10. Blinker" << std::endl;
+    std::cout << "11. Toad" << std::endl;
+    std::cout << "12. Beacon" << std::endl;
+    std::cout << "13. Pulsar" << std::endl;
+    std::cout << "14. Penta_decathlon" << std::endl;
+    std::cout << "15. Cross" << std::endl;
+    std::cout << "16. Star" << std::endl;
+    std::cout << "17. Clock" << std::endl;
+    std::cout << "18. Kok's galaxy" << std::endl;
+    std::cout << "19. Octagon" << std::endl;
+    std::cout << "20. French kiss" << std::endl;
+    std::cout << "21. Fumarole" << std::endl;
+    std::cout << "22. Pentoad\n" << std::endl;
+
+    std::cout << "Spaceships patterns:" << std::endl;
+    std::cout << "23. Glider" << std::endl;
+    std::cout << "24. Light weight spaceship" << std::endl;
+    std::cout << "25. Middle weight spaceship" << std::endl;
+    std::cout << "26. Heavy weight spaceship\n" << std::endl;
+
+    std::cout << "Guns patterns:" << std::endl;
+    std::cout << "27. Gosper's glider gun" << std::endl;
+    std::cout << "28. Simkin's glider gun\n\n" << std::endl;
+
+    short int mode_num;
+    std::cout << "Please enter a mode number: ";
+    std::cin >> mode_num;
+    while (std::cin.fail() || mode_num < 1 || 28 < mode_num){
+        std::cout << "Invalid input, please try again: ";
+        std::cin.clear(); // Clears error flag. If it's raised, cin won't get input.
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clears buffer
+        std::cin >> mode_num;
+    }
+    system("cls");
+
+    return mode_num;
+}
 
 // Draws the grid. Returns true iff grid is blank.
 bool drawGrid(sf::RenderWindow& window, std::vector< std::vector<sf::RectangleShape> >& grid, int grid_size){
@@ -66,6 +120,7 @@ void getUserInput(sf::RenderWindow& window, std::vector< std::vector<sf::Rectang
                     // Getting input from mouse
                 case sf::Event::MouseButtonPressed:
                     if (evnt.mouseButton.button == sf::Mouse::Left){
+                        system("cls"); // clear screen from previous generations
                         handleLeftClick(window, grid, window_width, window_height, grid_size);
                     }
                     break;
