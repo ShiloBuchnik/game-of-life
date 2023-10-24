@@ -3,10 +3,9 @@
 #include <windows.h>
 #include <vector>
 #include "game_logic.h"
-#include "global_macros.h"
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Game of life", sf::Style::Close | sf::Style::Titlebar);
+    sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Game of life", sf::Style::Default);
 
     // Create the grid of cells (not displaying it yet)
     std::vector< std::vector<sf::RectangleShape> > grid;
@@ -45,6 +44,12 @@ int main() {
                     // The grid "restarts" when user presses 'Enter'
                     if (evnt.key.code == sf::Keyboard::Enter) blankGrid(grid);
                     break;
+
+                case sf::Event::Resized:
+                    {
+                        sf::FloatRect visibleArea(0.f, 0.f, evnt.size.width, evnt.size.height);
+                        window.setView(sf::View(visibleArea));
+                    }
             }
         }
 

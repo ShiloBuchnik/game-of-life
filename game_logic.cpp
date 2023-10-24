@@ -1,7 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <iostream>
-#include "global_macros.h"
+#include "game_logic.h"
 
 // Draws the grid. Returns true iff grid is blank.
 bool drawGrid(sf::RenderWindow& window, std::vector< std::vector<sf::RectangleShape> >& grid, int grid_size){
