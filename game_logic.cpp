@@ -6,7 +6,7 @@
 // Returns number chosen by user.
 short int introduction(){
     std::cout << "Welcome to 'game of life'. Below are starting modes:\n" << std::endl;
-    std::cout << "1. Free mode\n" << std::endl;
+    std::cout << "1. Custom pattern\n" << std::endl;
 
     std::cout << "StillLifes patterns:" << std::endl;
     std::cout << "2. Block" << std::endl;
@@ -152,7 +152,8 @@ inline short int numOfNeighbors(std::vector< std::vector<sf::RectangleShape> >& 
 
             // We use 'at()' to not go out of bounds when we check the environment
             try{
-                if (grid.at(k).at(p).getFillColor() == LIVE_CELL_COLOR) count++;
+                const sf::Color& color = grid.at(k).at(p).getFillColor();
+                if (color == LIVE_CELL_COLOR || color == sf::Color::White) count++;
             }
             catch(const std::out_of_range& ex) { }
         }
@@ -162,30 +163,30 @@ inline short int numOfNeighbors(std::vector< std::vector<sf::RectangleShape> >& 
 }
 
 // Update the grid to next generation.
-// Note that we can't do the changes in-place, so we write all the changes to a boolean matrix, then copy it back to the original grid.
-// Essentially, this is like double buffering
+// We're doing it in-place. Since the board is updated simultaneously, we need a way to know whether a cell was dead or alive before we changed it.
+// If a live cell becomes dead, we color it white; and if a dead cell becomes alive, we color it black.
+// Now we know - a live cell is either red or white, and a dead cell is either grey or black.
+// Based on that we can reassign the red and grey values to the grid (which happens in the second 'for' loop).
 void updateGrid(std::vector< std::vector<sf::RectangleShape> >& grid){
-    std::vector< std::vector<bool> > new_locations(grid.size(), std::vector<bool>(grid[0].size(), false));
-
     // Writing changes to boolean matrix
     for (int i = 0; i < grid.size(); i++) {
         for (int j = 0; j < grid[0].size(); j++) {
             short int num_of_neighbors = numOfNeighbors(grid, i, j);
 
-            if (grid[i][j].getFillColor() == LIVE_CELL_COLOR){ // Cell is alive
-                if (num_of_neighbors <= 1 || 4 <= num_of_neighbors) new_locations[i][j] = false;
-                else new_locations[i][j] = true;
+            if (grid[i][j].getFillColor() == LIVE_CELL_COLOR || grid[i][j].getFillColor() == sf::Color::White){ // Cell is alive
+                if (num_of_neighbors <= 1 || 4 <= num_of_neighbors) grid[i][j].setFillColor(sf::Color::White); // Cell becomes dead
             }
             else{ // Cell is dead
-                if (num_of_neighbors == 3) new_locations[i][j] = true;
+                if (num_of_neighbors == 3) grid[i][j].setFillColor(sf::Color::Black); // Cell becomes alive
             }
         }
     }
 
-    // Copying back to original grid
     for (int i = 0; i < grid.size(); i++) {
         for (int j = 0; j < grid[0].size(); j++) {
-            grid[i][j].setFillColor(new_locations[i][j] ? LIVE_CELL_COLOR : DEAD_CELL_COLOR);
+            const sf::Color& color = grid[i][j].getFillColor();
+            if (color == sf::Color::White) grid[i][j].setFillColor(DEAD_CELL_COLOR);
+            else if (color == sf::Color::Black) grid[i][j].setFillColor(LIVE_CELL_COLOR);
         }
     }
 }

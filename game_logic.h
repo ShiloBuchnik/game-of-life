@@ -5,7 +5,7 @@
 #define WINDOW_WIDTH 1440
 #define WINDOW_HEIGHT 810
 #define GRID_SIZE 30
-#define DEAD_CELL_COLOR sf::Color(128, 128, 128)
+#define DEAD_CELL_COLOR sf::Color(128, 128, 128) // Grey
 #define LIVE_CELL_COLOR sf::Color::Red
 #define SLEEP_DURATION 500
 

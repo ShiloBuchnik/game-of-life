@@ -23,7 +23,7 @@ int main() {
     sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Game of life", sf::Style::Default);
     //sf::View view(sf::Vector2f(WINDOW_HEIGHT / 2, WINDOW_WIDTH / 2), sf::Vector2f(WINDOW_HEIGHT, WINDOW_WIDTH));
 
-    if (mode_num == 1) getUserInput(window, grid, WINDOW_WIDTH, WINDOW_HEIGHT, GRID_SIZE); // Free mode
+    if (mode_num == 1) getUserInput(window, grid, WINDOW_WIDTH, WINDOW_HEIGHT, GRID_SIZE); // Custom pattern
     else Patterns::putPatternInGrid(grid, *Patterns::numToPattern[mode_num]); // Pre-defined pattern
 
     long long int gen = 0;
@@ -48,7 +48,7 @@ int main() {
                     if (evnt.key.code == sf::Keyboard::Enter) blankGrid(grid);
 
                     /*if (evnt.key.code == sf::Keyboard::D){
-                        view.move(50, 50);
+                        view.move(sf::Vector2f(10, 0));
                         window.setView(view);
                     }
                     break;
@@ -61,6 +61,7 @@ int main() {
             }
         }
 
+        //window.setView(view);
         updateGrid(grid);
         gen++;
         std::cout << "Generation: " << gen << std::endl;
