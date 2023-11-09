@@ -14,7 +14,6 @@
 #define SLEEP_DURATION 400
 
 short int introduction();
-void getUserInput(sf::RenderWindow& window, sf::View& view, std::vector< std::vector<sf::RectangleShape> >& grid);
 
 inline void changeView(sf::RenderWindow& window, sf::View& view, sf::Event& evnt){
     if (evnt.key.code == sf::Keyboard::W){
@@ -35,8 +34,25 @@ inline void changeView(sf::RenderWindow& window, sf::View& view, sf::Event& evnt
     }
 }
 
-void blankGrid(std::vector< std::vector<sf::RectangleShape> >& grid);
-void updateGrid(std::vector< std::vector<sf::RectangleShape> >& grid);
-bool drawGrid(sf::RenderWindow& window, std::vector< std::vector<sf::RectangleShape> >& grid);
+// We need to define a custom hash and equal functors for pair type.
+// Defining a hash is not enough, since hash functions can have collisions.
+// Side note: the overloaded '()' is templated, but that's okay, because C++ has type inference
+class pair_hash {
+public:
+    std::size_t operator() (const sf::Vector2i &pair) const {
+        std::hash<int> hash_obj;
+        return ~hash_obj(pair.x) ^ hash_obj(pair.y);
+    }
+};
+class pair_equal {
+public:
+    bool operator() (const sf::Vector2i &pair1, const sf::Vector2i &pair2) const {
+        return pair1.x == pair2.x && pair1.y == pair2.y;
+    }
+};
+
+void getUserInput(sf::RenderWindow& window, sf::View& view, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
+void updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
+void drawGrid(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
 
 #endif

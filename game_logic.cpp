@@ -1,10 +1,12 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <limits>
+#include <unordered_set>
+#include <unordered_map>
 #include "game_logic.h"
 
 // Returns number chosen by user.
-short int introduction(){
+short int introduction() {
     std::cout << "Welcome to 'game of life'. Below are starting modes:\n" << std::endl;
     std::cout << "1. Custom pattern\n" << std::endl;
 
@@ -46,7 +48,7 @@ short int introduction(){
     short int mode_num;
     std::cout << "Please enter a mode number: ";
     std::cin >> mode_num;
-    while (std::cin.fail() || mode_num < 1 || 28 < mode_num){
+    while (std::cin.fail() || mode_num < 1 || 28 < mode_num) {
         std::cout << "Invalid input, please try again: ";
         std::cin.clear(); // Clears error flag. If it's raised, cin won't get input.
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clears buffer
@@ -58,30 +60,30 @@ short int introduction(){
 }
 
 // Draws the grid. Returns true iff grid is blank.
-bool drawGrid(sf::RenderWindow& window, std::vector< std::vector<sf::RectangleShape> >& grid){
-    bool is_grid_blank = true;
+void drawGrid(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid) {
+    sf::RectangleShape cell(sf::Vector2f(CELL_SIZE, CELL_SIZE));
+    cell.setOutlineColor(sf::Color(200, 200, 200)); // Beige
+    cell.setOutlineThickness(1.25);
+    for (int i = 0; i < GRID_HEIGHT / CELL_SIZE; i++) {
+        for (int j = 0; j < GRID_WIDTH / CELL_SIZE; j++) {
+            if (grid.count({j,i})) cell.setFillColor(LIVE_CELL_COLOR);
+            else cell.setFillColor(DEAD_CELL_COLOR);
 
-    for (int i = 0; i < grid.size(); i++) {
-        for (int j = 0; j < grid[0].size(); j++) {
-            // Set cell position based on its grid coordinates
-            grid[i][j].setPosition(j * CELL_SIZE, i * CELL_SIZE);
-            window.draw(grid[i][j]);
-
-            if (grid[i][j].getFillColor() == LIVE_CELL_COLOR) is_grid_blank = false;
+            // Set cell position based on its grid coordinates.
+            cell.setPosition(j * CELL_SIZE, i * CELL_SIZE);
+            window.draw(cell);
         }
     }
-
-    return is_grid_blank;
 }
 
-static void handleLeftClick(sf::RenderWindow& window, std::vector< std::vector<sf::RectangleShape> >& grid) {
+static void handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid) {
     /* Even when changing the view, *the objects themselves always remain in the same place in the "world"*.
     It's literally like a camera in a video game - it changes our perspective, but doesn't change the world.
     For example, if we click on a certain pixel, move the view (without moving the mouse), and click again,
     *SFML would register that as a click on that exact same pixel*.
     That is because it remained in the same place in the world, and our view is the only thing that changed.
     So, essentially, we have the location in the real world and location in the current view.
-    
+
     What we do below is transforming click coordinates (which are always the literal pixels on the screen),
     to the "relative" or "view" coordinates, which compensate for the fact that our view is moved from the real world objects.
     It's easier to understand with an example:
@@ -99,17 +101,13 @@ static void handleLeftClick(sf::RenderWindow& window, std::vector< std::vector<s
         view_pos.y /= CELL_SIZE;
 
         // We allow selecting and deselecting cells
-        if (grid[view_pos.y][view_pos.x].getFillColor() == DEAD_CELL_COLOR){
-            grid[view_pos.y][view_pos.x].setFillColor(LIVE_CELL_COLOR);
-        }
-        else{
-            grid[view_pos.y][view_pos.x].setFillColor(DEAD_CELL_COLOR);
-        }
+        if (grid.count(view_pos)) grid.erase(view_pos);
+        else grid.insert(view_pos);
     }
 }
 
 // This function get initial pattern from user, and then is being called everytime the grid gets blank
-void getUserInput(sf::RenderWindow& window, sf::View& view, std::vector< std::vector<sf::RectangleShape> >& grid){
+void getUserInput(sf::RenderWindow& window, sf::View& view, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid) {
     while (window.isOpen()) {
         sf::Event evnt;
         while (window.pollEvent(evnt)) {
@@ -120,7 +118,7 @@ void getUserInput(sf::RenderWindow& window, sf::View& view, std::vector< std::ve
                     break;
 
                 case sf::Event::KeyPressed:
-                    if (evnt.key.code == sf::Keyboard::Escape){
+                    if (evnt.key.code == sf::Keyboard::Escape) {
                         window.close();
                         exit(0);
                     }
@@ -128,14 +126,14 @@ void getUserInput(sf::RenderWindow& window, sf::View& view, std::vector< std::ve
                     // End of user input stage
                     if (evnt.key.code == sf::Keyboard::Enter) return;
 
-                    if (evnt.key.code == sf::Keyboard::W || evnt.key.code == sf::Keyboard::A || evnt.key.code == sf::Keyboard::S || evnt.key.code == sf::Keyboard::D){
+                    if (evnt.key.code == sf::Keyboard::W || evnt.key.code == sf::Keyboard::A || evnt.key.code == sf::Keyboard::S || evnt.key.code == sf::Keyboard::D) {
                         changeView(window, view, evnt);
                     }
                     break;
 
-                    // Getting input from mouse
+                // Getting input from mouse
                 case sf::Event::MouseButtonPressed:
-                    if (evnt.mouseButton.button == sf::Mouse::Left){
+                    if (evnt.mouseButton.button == sf::Mouse::Left) {
                         system("cls"); // clear terminal screen from previous generations
                         handleLeftClick(window, grid);
                     }
@@ -156,33 +154,14 @@ void getUserInput(sf::RenderWindow& window, sf::View& view, std::vector< std::ve
     }
 }
 
-// Blanking the grid
-void blankGrid(std::vector< std::vector<sf::RectangleShape> >& grid){
-    for (int i = 0; i < grid.size(); i++) {
-        for (int j = 0; j < grid[0].size(); j++) {
-            grid[i][j].setFillColor(DEAD_CELL_COLOR);
+static void addNeighbors(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid,
+                         std::unordered_map<sf::Vector2i, int, pair_hash, pair_equal>& m, const sf::Vector2i& coordinate) {
+    for (int k = coordinate.y - 1; k <= coordinate.y + 1; k++) {
+        for (int p = coordinate.x - 1; p <= coordinate.x + 1; p++) {
+            // Bound checking, so we don't add a cell beyond bounds.
+            if (0 <= k && k <= GRID_HEIGHT / CELL_SIZE && 0 <= p && p <= GRID_WIDTH / CELL_SIZE) m[{p, k}]++;
         }
     }
-}
-
-// Returns number of neighbors in the cell's Moore's environment
-inline short int numOfNeighbors(std::vector< std::vector<sf::RectangleShape> >& grid, int i, int j){
-    short int count = 0;
-
-    for (int k = i - 1; k <= i + 1; k++){
-        for (int p = j - 1; p <= j + 1; p++){
-            if (k == i && p == j) continue; // We don't count the (i,j) cell
-
-            // We use 'at()' to not go out of bounds when we check the environment
-            try{
-                const sf::Color& color = grid.at(k).at(p).getFillColor();
-                if (color == LIVE_CELL_COLOR || color == sf::Color::White) count++;
-            }
-            catch(const std::out_of_range& ex) { }
-        }
-    }
-
-    return count;
 }
 
 // Update the grid to next generation.
@@ -192,26 +171,17 @@ inline short int numOfNeighbors(std::vector< std::vector<sf::RectangleShape> >& 
 // Based on that we can reassign the red and grey values to the grid (which happens in the second 'for' loop).
 
 // Note that we can't use a sparse matrix (set or map), because we need to display every cell - dead or alive.
-void updateGrid(std::vector< std::vector<sf::RectangleShape> >& grid){
-    // Writing changes to boolean matrix
-    for (int i = 0; i < grid.size(); i++) {
-        for (int j = 0; j < grid[0].size(); j++) {
-            short int num_of_neighbors = numOfNeighbors(grid, i, j);
+void updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid) {
+    std::unordered_map<sf::Vector2i, int, pair_hash, pair_equal> live_and_neighbors;
 
-            if (grid[i][j].getFillColor() == LIVE_CELL_COLOR || grid[i][j].getFillColor() == sf::Color::White){ // Cell is alive
-                if (num_of_neighbors <= 1 || 4 <= num_of_neighbors) grid[i][j].setFillColor(sf::Color::White); // Cell becomes dead
-            }
-            else{ // Cell is dead
-                if (num_of_neighbors == 3) grid[i][j].setFillColor(sf::Color::Black); // Cell becomes alive
-            }
-        }
+    for (auto coordinate : grid) {
+        addNeighbors(grid, live_and_neighbors, coordinate);
     }
 
-    for (int i = 0; i < grid.size(); i++) {
-        for (int j = 0; j < grid[0].size(); j++) {
-            const sf::Color& color = grid[i][j].getFillColor();
-            if (color == sf::Color::White) grid[i][j].setFillColor(DEAD_CELL_COLOR);
-            else if (color == sf::Color::Black) grid[i][j].setFillColor(LIVE_CELL_COLOR);
-        }
+    std::unordered_set<sf::Vector2i, pair_hash, pair_equal> next_gen_live_cells;
+    for (auto map_pair : live_and_neighbors) {
+        if (map_pair.second == 3 || (map_pair.second == 4 && grid.count(map_pair.first))) next_gen_live_cells.insert(map_pair.first);
     }
+
+    grid.swap(next_gen_live_cells);
 }

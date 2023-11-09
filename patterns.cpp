@@ -1,8 +1,10 @@
 #include <SFML/Graphics.hpp>
+#include <unordered_set>
 #include "game_logic.h"
 
 namespace Patterns{
-    // Anonymous namespace - like a static function, its visibility is limited to current translation unit
+    // Anonymous namespace - like a static function, its visibility is limited to current translation unit.
+    // For that reason, it doesn't go in the .h file.
     namespace{
         int cells_count_x = GRID_WIDTH / CELL_SIZE, cells_count_y = GRID_HEIGHT / CELL_SIZE;;
 
@@ -83,7 +85,7 @@ namespace Patterns{
                                                        {20,18}, {21,19}, {22,19}, {23,19}, {23,20}};
     }
 
-    // Maps the numbers in [2-28] to their respective variable in the namespace
+    // Maps the numbers in [2-28] to their respective variable in the namespace.
     std::vector < std::vector<sf::Vector2i>* > numToPattern =
         {nullptr, nullptr, &StillLifes::block, &StillLifes::bee_hive, &StillLifes::honey_farm, &StillLifes::loaf, &StillLifes::bakery,
          &StillLifes::boat, &StillLifes::ship, &StillLifes::tub, &Oscillators::blinker, &Oscillators::toad, &Oscillators::beacon,
@@ -92,13 +94,13 @@ namespace Patterns{
         &Spaceships::glider, &Spaceships::light_weight_spaceship, &Spaceships::middle_weight_spaceship, &Spaceships::heavy_weight_spaceship,
         &Guns::gosper_glider_gun, &Guns::simkin_glider_gun};
 
-    void putPatternInGrid(std::vector< std::vector<sf::RectangleShape> >& grid, const std::vector<sf::Vector2i>& points){
+    void putPatternInGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, const std::vector<sf::Vector2i>& points){
         sf::Vector2i center_of_mass = centerOfMass(points);
 
         for (auto point : points){
             int x = point.x + cells_count_x / 2 - center_of_mass.x;
             int y = point.y + cells_count_y / 2 - center_of_mass.y;
-            grid[y][x].setFillColor(LIVE_CELL_COLOR);
+            grid.insert({x,y});
         }
     }
 }

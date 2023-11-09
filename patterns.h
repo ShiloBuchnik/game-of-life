@@ -3,12 +3,6 @@
 #include <SFML/Graphics.hpp>
 
 namespace Patterns{
-    namespace{
-        extern int grids_count_x, grids_count_y;
-
-        sf::Vector2i centerOfMass(const std::vector<sf::Vector2i>& points);
-    }
-
     namespace StillLifes{
         extern std::vector<sf::Vector2i> block;
         extern std::vector<sf::Vector2i> bee_hive;
@@ -51,7 +45,7 @@ namespace Patterns{
     extern std::vector < std::vector<sf::Vector2i>* > numToPattern;
 
     // Takes a grid and a vector of points (each point is a grid coordinate), and color fill those grids
-    void putPatternInGrid(std::vector< std::vector<sf::RectangleShape> >& grid, const std::vector<sf::Vector2i>& points);
+    void putPatternInGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, const std::vector<sf::Vector2i>& points);
 }
 
 #endif
