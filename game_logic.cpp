@@ -58,13 +58,13 @@ short int introduction(){
 }
 
 // Draws the grid. Returns true iff grid is blank.
-bool drawGrid(sf::RenderWindow& window, std::vector< std::vector<sf::RectangleShape> >& grid, int grid_size){
+bool drawGrid(sf::RenderWindow& window, std::vector< std::vector<sf::RectangleShape> >& grid){
     bool is_grid_blank = true;
 
     for (int i = 0; i < grid.size(); i++) {
         for (int j = 0; j < grid[0].size(); j++) {
             // Set cell position based on its grid coordinates
-            grid[i][j].setPosition(j * grid_size, i * grid_size);
+            grid[i][j].setPosition(j * CELL_SIZE, i * CELL_SIZE);
             window.draw(grid[i][j]);
 
             if (grid[i][j].getFillColor() == LIVE_CELL_COLOR) is_grid_blank = false;
@@ -74,30 +74,42 @@ bool drawGrid(sf::RenderWindow& window, std::vector< std::vector<sf::RectangleSh
     return is_grid_blank;
 }
 
-static void handleLeftClick(sf::RenderWindow& window, std::vector< std::vector<sf::RectangleShape> >& grid,
-                            int window_width, int window_height, int grid_size){
-    sf::Vector2i mouse_pos = sf::Mouse::getPosition(window);
+static void handleLeftClick(sf::RenderWindow& window, std::vector< std::vector<sf::RectangleShape> >& grid) {
+    /* Even when changing the view, *the objects themselves always remain in the same place in the "world"*.
+    It's literally like a camera in a video game - it changes our perspective, but doesn't change the world.
+    For example, if we click on a certain pixel, move the view (without moving the mouse), and click again,
+    *SFML would register that as a click on that exact same pixel*.
+    That is because it remained in the same place in the world, and our view is the only thing that changed.
+    So, essentially, we have the location in the real world and location in the current view.
+    
+    What we do below is transforming click coordinates (which are always the literal pixels on the screen),
+    to the "relative" or "view" coordinates, which compensate for the fact that our view is moved from the real world objects.
+    It's easier to understand with an example:
+    If our cursor is on cell (1,1), and we move the view by pressing "D" (right) and "S" (down), and then click;
+    We need to a way to "tell SFML" to click on cell (2,2), and not cell (1,1) (which is off-screen now).
+    So we use 'mapPixelToCoords()', which takes a literal position on the window, fixes it according to the view, and returns it. */
+    sf::Vector2i pixel_pos = sf::Mouse::getPosition(window); // Pixels are integers
+    sf::Vector2i view_pos = static_cast<sf::Vector2i> (window.mapPixelToCoords(pixel_pos)); // Coordinates can be floats, but we cast to ints
 
-    // We only register clicks inside the window
-    if (0 <= mouse_pos.x && mouse_pos.x < window_width && 0 <= mouse_pos.y && mouse_pos.y < window_height) {
+    // We only register clicks inside the grid. Note that we use the grid's width and height, and not the window's, as it contains the window.
+    if (0 <= view_pos.x && view_pos.x < GRID_WIDTH && 0 <= view_pos.y && view_pos.y < GRID_HEIGHT) {
         // Converting raw coordinate to cell location in the grid
         // This is how we get from an exact coordinate to the cell it's in
-        mouse_pos.x /= grid_size;
-        mouse_pos.y /= grid_size;
+        view_pos.x /= CELL_SIZE;
+        view_pos.y /= CELL_SIZE;
 
         // We allow selecting and deselecting cells
-        if (grid[mouse_pos.y][mouse_pos.x].getFillColor() == DEAD_CELL_COLOR){
-            grid[mouse_pos.y][mouse_pos.x].setFillColor(LIVE_CELL_COLOR);
+        if (grid[view_pos.y][view_pos.x].getFillColor() == DEAD_CELL_COLOR){
+            grid[view_pos.y][view_pos.x].setFillColor(LIVE_CELL_COLOR);
         }
         else{
-            grid[mouse_pos.y][mouse_pos.x].setFillColor(DEAD_CELL_COLOR);
+            grid[view_pos.y][view_pos.x].setFillColor(DEAD_CELL_COLOR);
         }
     }
 }
 
 // This function get initial pattern from user, and then is being called everytime the grid gets blank
-void getUserInput(sf::RenderWindow& window, std::vector< std::vector<sf::RectangleShape> >& grid,
-                  int window_width, int window_height, int grid_size){
+void getUserInput(sf::RenderWindow& window, sf::View& view, std::vector< std::vector<sf::RectangleShape> >& grid){
     while (window.isOpen()) {
         sf::Event evnt;
         while (window.pollEvent(evnt)) {
@@ -115,20 +127,31 @@ void getUserInput(sf::RenderWindow& window, std::vector< std::vector<sf::Rectang
 
                     // End of user input stage
                     if (evnt.key.code == sf::Keyboard::Enter) return;
+
+                    if (evnt.key.code == sf::Keyboard::W || evnt.key.code == sf::Keyboard::A || evnt.key.code == sf::Keyboard::S || evnt.key.code == sf::Keyboard::D){
+                        changeView(window, view, evnt);
+                    }
                     break;
 
                     // Getting input from mouse
                 case sf::Event::MouseButtonPressed:
                     if (evnt.mouseButton.button == sf::Mouse::Left){
-                        system("cls"); // clear screen from previous generations
-                        handleLeftClick(window, grid, window_width, window_height, grid_size);
+                        system("cls"); // clear terminal screen from previous generations
+                        handleLeftClick(window, grid);
                     }
                     break;
+
+                case sf::Event::Resized: {
+                    sf::Vector2i top_left_view_pos = static_cast<sf::Vector2i> (window.mapPixelToCoords(sf::Vector2i(0, 0)));
+                    view.reset(sf::FloatRect(top_left_view_pos.x, top_left_view_pos.y, evnt.size.width, evnt.size.height));
+                    window.setView(view);
+                    break;
+                }
             }
         }
 
         window.clear();
-        drawGrid(window, grid, grid_size);
+        drawGrid(window, grid);
         window.display();
     }
 }
@@ -167,6 +190,8 @@ inline short int numOfNeighbors(std::vector< std::vector<sf::RectangleShape> >& 
 // If a live cell becomes dead, we color it white; and if a dead cell becomes alive, we color it black.
 // Now we know - a live cell is either red or white, and a dead cell is either grey or black.
 // Based on that we can reassign the red and grey values to the grid (which happens in the second 'for' loop).
+
+// Note that we can't use a sparse matrix (set or map), because we need to display every cell - dead or alive.
 void updateGrid(std::vector< std::vector<sf::RectangleShape> >& grid){
     // Writing changes to boolean matrix
     for (int i = 0; i < grid.size(); i++) {

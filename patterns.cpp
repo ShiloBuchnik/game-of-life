@@ -4,7 +4,7 @@
 namespace Patterns{
     // Anonymous namespace - like a static function, its visibility is limited to current translation unit
     namespace{
-        int grids_count_x = WINDOW_WIDTH / GRID_SIZE, grids_count_y = WINDOW_HEIGHT / GRID_SIZE;;
+        int cells_count_x = GRID_WIDTH / CELL_SIZE, cells_count_y = GRID_HEIGHT / CELL_SIZE;;
 
         sf::Vector2i centerOfMass(const std::vector<sf::Vector2i>& points){
             int sum_x = 0, sum_y = 0, points_size = points.size();
@@ -96,8 +96,8 @@ namespace Patterns{
         sf::Vector2i center_of_mass = centerOfMass(points);
 
         for (auto point : points){
-            int x = point.x + grids_count_x / 2 - center_of_mass.x;
-            int y = point.y + grids_count_y / 2 - center_of_mass.y;
+            int x = point.x + cells_count_x / 2 - center_of_mass.x;
+            int y = point.y + cells_count_y / 2 - center_of_mass.y;
             grid[y][x].setFillColor(LIVE_CELL_COLOR);
         }
     }
