@@ -6,33 +6,16 @@
 #define WINDOW_WIDTH 1440
 #define WINDOW_HEIGHT 810
 #define MULTIPLE 5
+// The grid is 5 times bigger than the initial window size, so that it looks like an "infinite" grid.
 #define GRID_WIDTH WINDOW_WIDTH * MULTIPLE
 #define GRID_HEIGHT WINDOW_HEIGHT * MULTIPLE
 #define CELL_SIZE 30
 #define DEAD_CELL_COLOR sf::Color(128, 128, 128) // Grey
 #define LIVE_CELL_COLOR sf::Color::Red
-#define SLEEP_DURATION 400
+#define TIMESTEP sf::milliseconds(500) // Returns an 'sf::Time' object
+#define SPEED (float) 0.2
 
 short int introduction();
-
-inline void changeView(sf::RenderWindow& window, sf::View& view, sf::Event& evnt){
-    if (evnt.key.code == sf::Keyboard::W){
-        view.move(sf::Vector2f(0, -1 * CELL_SIZE));
-        window.setView(view);
-    }
-    if (evnt.key.code == sf::Keyboard::A){
-        view.move(sf::Vector2f(-1 * CELL_SIZE, 0));
-        window.setView(view);
-    }
-    if (evnt.key.code == sf::Keyboard::S){
-        view.move(sf::Vector2f(0, CELL_SIZE));
-        window.setView(view);
-    }
-    if (evnt.key.code == sf::Keyboard::D){
-        view.move(sf::Vector2f(CELL_SIZE, 0));
-        window.setView(view);
-    }
-}
 
 // We need to define a custom hash and equal functors for pair type.
 // Defining a hash is not enough, since hash functions can have collisions.
@@ -51,7 +34,7 @@ public:
     }
 };
 
-void getUserInput(sf::RenderWindow& window, sf::View& view, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
+void getUserInput(sf::RenderWindow& window, sf::View& view, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, bool& focus);
 void updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
 void drawGrid(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
 
