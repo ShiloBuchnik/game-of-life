@@ -15,11 +15,9 @@
 #define TIMESTEP sf::milliseconds(500) // Returns an 'sf::Time' object
 #define SPEED (float) 0.2
 
-short int introduction();
-
-// We need to define a custom hash and equal functors for pair type.
-// Defining a hash is not enough, since hash functions can have collisions.
-// Side note: the overloaded '()' is templated, but that's okay, because C++ has type inference
+/* We need to define a custom hash and equal functors for pair type.
+ Defining a hash is not enough, since hash functions can have collisions.
+ Side note: the overloaded '()' is templated, but that's okay, because C++ has type inference */
 class pair_hash {
 public:
     std::size_t operator() (const sf::Vector2i &pair) const {
@@ -34,8 +32,9 @@ public:
     }
 };
 
-void getUserInput(sf::RenderWindow& window, sf::View& view, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, bool& focus);
-void updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
+short int introduction();
+sf::Vector2i handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
+bool updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
 void drawGrid(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
 
 #endif

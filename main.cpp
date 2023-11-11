@@ -5,6 +5,10 @@
 #include "game_logic.h"
 #include "patterns.h"
 
+inline float distance(sf::Vector2f vec1, sf::Vector2f vec2){
+    return sqrt(pow(vec2.x - vec1.x, 2) + pow(vec2.y - vec1.y, 2));
+}
+
 int main(){
     short int mode_num = introduction();
 
@@ -20,10 +24,13 @@ int main(){
     // Since our initial view is different from the default view, we have to set it before we continue.
     window.setView(view);
 
-    if (mode_num == 1) getUserInput(window, view, grid, focus); // Custom pattern
+    bool getting_input = false;
+    if (mode_num == 1) getting_input = true;
     else Patterns::putPatternInGrid(grid, *Patterns::numToPattern[mode_num]); // Pre-defined pattern
 
     sf::Clock timestep_clock, key_press_clock;
+    sf::Vector2f old_view_pos = window.mapPixelToCoords(sf::Mouse::getPosition(window)), new_view_pos;
+    sf::Vector2i last_clicked_cell;
     long long int gen = 0;
     while (window.isOpen()){
         sf::Event evnt;
@@ -43,7 +50,17 @@ int main(){
                     }
 
                     // The grid "restarts" when user presses 'Enter'.
-                    if (evnt.key.code == sf::Keyboard::Enter) grid.clear();
+                    if (evnt.key.code == sf::Keyboard::Enter){
+                        if (getting_input){ // Submitting input (finished getting input)
+                            system("cls"); // Deleting previous printing of generations.
+                            getting_input = false;
+                        }
+                        else { // Resetting grid (start getting input)
+                            getting_input = true;
+                            grid.clear();
+                            gen = 0;
+                        }
+                    }
                     break;
 
                 // Because 'isKeyPressed' is "connected" to the actual device, it's getting input even when window is out of focus.
@@ -53,6 +70,13 @@ int main(){
                     break;
                 case sf::Event::LostFocus:
                     focus = false;
+                    break;
+
+                // Getting input from mouse.
+                case sf::Event::MouseButtonReleased:
+                    if (getting_input && evnt.mouseButton.button == sf::Mouse::Left && distance(old_view_pos, new_view_pos) <= 0.15 * CELL_SIZE){
+                        last_clicked_cell = handleLeftClick(window, grid);
+                    }
                     break;
 
                 case sf::Event::Resized: {
@@ -88,6 +112,11 @@ int main(){
         Now we're dependent only at the *duration of time the key was pressed*!
         This is essentially a normalization, since now we move on the same speed no matter the while loop we're in. */
         float delta_time = (float) key_press_clock.restart().asMilliseconds();
+        /* Note that the product 'SPEED * delta_time' can be a *float*, so moving by it can make the line not align 1:1 with the pixels,
+        because their location is always in integers.
+        When a line falls between 2 columns of pixels, openGL has to decide on the fly how to render it,
+        and it often causes it to flicker when there is movement.
+        By rounding the result, we move the view by an integer, and thus always aligning 1:1 with the pixels. */
         if (focus && sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)){
             view.move(sf::Vector2f(0, std::round(-1 * SPEED * delta_time)));
             window.setView(view);
@@ -105,25 +134,35 @@ int main(){
             window.setView(view);
         }
 
+        // TODO: remember to round!
+        new_view_pos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)){
+            /*if (getting_input && ){
+                grid.erase(last_clicked_cell);
+            } */
+
+            sf::Vector2f deltaPos = old_view_pos - new_view_pos;
+            view.move(round(deltaPos.x), round(deltaPos.y));
+            window.setView(view);
+        }
+        old_view_pos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+
         // Using 'sleep' would lag other events like resizing or restarting the grid (since 'sleep' pauses the entire program for its duration).
         // A better solution is to use 'sf::clock', which lets us check for elapsed time.
         // When that elapsed time is bigger than our 'TIMESTEP' duration, we reset the clock and redraw the grid.
-        // TODO: check if I need to add '|| grid.empty()' in condition.
-        if (TIMESTEP <= timestep_clock.getElapsedTime()){
+        if (TIMESTEP <= timestep_clock.getElapsedTime() && !getting_input){
             timestep_clock.restart();
 
-            updateGrid(grid);
             gen++;
             std::cout << "Generation: " << gen << std::endl;
+            if (updateGrid(grid)){
+                gen = 0;
+                getting_input = true; // If grid clears itself, we begin to get input again
+            }
         }
 
-        window.clear();
-        // If we got to an empty grid, that means we need to start again and ask for user's input.
+        window.clear(DEAD_CELL_COLOR);
         drawGrid(window, grid);
-        if (grid.empty()){
-            getUserInput(window, view, grid, focus);
-            gen = 0;
-        }
         window.display();
     }
 

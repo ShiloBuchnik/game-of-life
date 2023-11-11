@@ -1,7 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
-#include <limits>
 #include <cmath>
+#include <limits>
 #include <unordered_set>
 #include <unordered_map>
 #include "game_logic.h"
@@ -60,32 +60,15 @@ short int introduction(){
     return mode_num;
 }
 
-// Draws the grid. Returns true iff grid is blank.
-void drawGrid(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
-    sf::RectangleShape cell(sf::Vector2f(CELL_SIZE, CELL_SIZE));
-    cell.setOutlineColor(sf::Color(200, 200, 200)); // Beige
-    cell.setOutlineThickness(1.25);
-    for (int i = 0; i < GRID_HEIGHT / CELL_SIZE; i++){
-        for (int j = 0; j < GRID_WIDTH / CELL_SIZE; j++){
-            if (grid.count({j,i})) cell.setFillColor(LIVE_CELL_COLOR);
-            else cell.setFillColor(DEAD_CELL_COLOR);
-
-            // Set cell position based on its grid coordinates.
-            cell.setPosition(j * CELL_SIZE, i * CELL_SIZE);
-            window.draw(cell);
-        }
-    }
-}
-
-static void handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
+sf::Vector2i handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
     /* Even when changing the view, *the objects themselves always remain in the same place in the "world"*.
-    It's literally like a camera in a video game - it changes our perspective, but doesn't change the world.
+    It's like a camera in a video game - it changes our perspective, but doesn't change the world.
     For example, if we click on a certain pixel, move the view (without moving the mouse), and click again,
     *SFML would register that as a click on that exact same pixel*.
     That is because it remained in the same place in the world, and our view is the only thing that changed.
-    So, essentially, we have the location in the real world and location in the current view.
+    So, essentially, we have the location in the real world and the location in the current view.
 
-    What we do below is transforming click coordinates (which are always the literal pixels on the screen),
+    What we do below is transforming mouse coordinates (which are always the literal pixels on the screen),
     to the "relative" or "view" coordinates, which compensate for the fact that our view is moved from the real world objects.
     It's easier to understand with an example:
     If our cursor is on cell (1,1), and we move the view by pressing "D" (right) and "S" (down), and then click;
@@ -96,8 +79,7 @@ static void handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vec
 
     // We only register clicks inside the grid. Note that we use the grid's width and height, and not the window's, as it contains the window.
     if (0 <= view_pos.x && view_pos.x < GRID_WIDTH && 0 <= view_pos.y && view_pos.y < GRID_HEIGHT){
-        // Converting raw coordinate to cell location in the grid
-        // This is how we get from an exact coordinate to the cell it's in
+        // Converting raw coordinate to cell location in the grid. This is how we get from an exact coordinate to the cell it's in.
         view_pos.x /= CELL_SIZE;
         view_pos.y /= CELL_SIZE;
 
@@ -105,76 +87,8 @@ static void handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vec
         if (grid.count(view_pos)) grid.erase(view_pos);
         else grid.insert(view_pos);
     }
-}
 
-// This function get initial pattern from user, and then is being called everytime the grid gets blank
-void getUserInput(sf::RenderWindow& window, sf::View& view, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, bool& focus){
-    sf::Clock key_press_clock;
-    while (window.isOpen()){
-        sf::Event evnt;
-        while (window.pollEvent(evnt)){
-            switch(evnt.type){
-                case sf::Event::Closed:
-                    window.close();
-                    exit (0);
-                    break;
-
-                case sf::Event::KeyPressed:
-                    if (evnt.key.code == sf::Keyboard::Escape){
-                        window.close();
-                        exit(0);
-                    }
-
-                    // End of user input stage
-                    if (evnt.key.code == sf::Keyboard::Enter) return;
-                    break;
-
-                case sf::Event::GainedFocus:
-                    focus = true;
-                    break;
-                case sf::Event::LostFocus:
-                    focus = false;
-                    break;
-
-                // Getting input from mouse
-                case sf::Event::MouseButtonPressed:
-                    if (evnt.mouseButton.button == sf::Mouse::Left){
-                        system("cls"); // clear terminal screen from previous generations
-                        handleLeftClick(window, grid);
-                    }
-                    break;
-
-                case sf::Event::Resized: {
-                    sf::Vector2i top_left_view_pos = static_cast<sf::Vector2i> (window.mapPixelToCoords(sf::Vector2i(0, 0)));
-                    view.reset(sf::FloatRect(top_left_view_pos.x, top_left_view_pos.y, evnt.size.width, evnt.size.height));
-                    window.setView(view);
-                    break;
-                }
-            }
-        }
-
-        float delta_time = (float) key_press_clock.restart().asMilliseconds();
-        if (focus && sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)){
-            view.move(sf::Vector2f(0, std::round(-1 * SPEED * delta_time)));
-            window.setView(view);
-        }
-        if (focus && sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)){
-            view.move(sf::Vector2f(std::round(-1 * SPEED * delta_time), 0));
-            window.setView(view);
-        }
-        if (focus && sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)){
-            view.move(sf::Vector2f(0, std::round(SPEED * delta_time)));
-            window.setView(view);
-        }
-        if (focus && sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)){
-            view.move(sf::Vector2f(std::round(SPEED * delta_time), 0));
-            window.setView(view);
-        }
-
-        window.clear();
-        drawGrid(window, grid);
-        window.display();
-    }
+    return view_pos;
 }
 
 static void addNeighbors(std::unordered_map<sf::Vector2i, int, pair_hash, pair_equal>& m, const sf::Vector2i& coordinate){
@@ -186,7 +100,7 @@ static void addNeighbors(std::unordered_map<sf::Vector2i, int, pair_hash, pair_e
     }
 }
 
-/* Update the grid to next generation.
+/* Update the grid to next generation. Returns true iff grid is empty at the *end* of the update.
  The algorithm is as follows:
  1) Take the set of lives cells, and for every cell:
  Add itself and its neighbors to the map.
@@ -204,7 +118,7 @@ static void addNeighbors(std::unordered_map<sf::Vector2i, int, pair_hash, pair_e
  Although space was O(1) (because it's about *additional* space, and we did it in-place),
  we still had to rely on an O(n^2) matrix, so overall this algorithm is superior*.
  *With the caveat that a matrix is contiguous in memory, so under certain architecture with certain caches, it might be faster. */
-void updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
+bool updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
     // Maps a coordinate to amount of times it has been added.
     std::unordered_map<sf::Vector2i, int, pair_hash, pair_equal> coordinate_to_amount;
 
@@ -219,4 +133,23 @@ void updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
 
     // Swap happens in constant time (just rewiring of pointers, not deep copying).
     grid.swap(next_gen_live_cells);
+
+    return grid.empty();
+}
+
+// Draws the grid. Returns true iff grid is blank.
+void drawGrid(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
+    sf::RectangleShape cell(sf::Vector2f(CELL_SIZE, CELL_SIZE));
+    cell.setOutlineColor(sf::Color(200, 200, 200)); // Beige
+    cell.setOutlineThickness(1.25);
+    for (int i = 0; i < GRID_HEIGHT / CELL_SIZE; i++){
+        for (int j = 0; j < GRID_WIDTH / CELL_SIZE; j++){
+            if (grid.count({j,i})) cell.setFillColor(LIVE_CELL_COLOR);
+            else cell.setFillColor(DEAD_CELL_COLOR);
+
+            // Set cell position based on its grid coordinates.
+            cell.setPosition(j * CELL_SIZE, i * CELL_SIZE);
+            window.draw(cell);
+        }
+    }
 }
