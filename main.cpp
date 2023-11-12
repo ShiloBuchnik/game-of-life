@@ -5,12 +5,13 @@
 #include "game_logic.h"
 #include "patterns.h"
 
-inline float distance(sf::Vector2f vec1, sf::Vector2f vec2){
+inline float distance(sf::Vector2i vec1, sf::Vector2i vec2){
     return sqrt(pow(vec2.x - vec1.x, 2) + pow(vec2.y - vec1.y, 2));
 }
 
 int main(){
     short int mode_num = introduction();
+    // TODO: restrict view to not go outside the board.
 
     // We implement the grid using a sparse matrix - which is just a set that stores only the *live cells*.
     // Thus, the space complexity reduces from O(n^2) to O(num of live cells).
@@ -18,20 +19,20 @@ int main(){
 
     sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Game of life", sf::Style::Default);
     bool focus = true; // True iff focus is on window.
+    bool getting_input = false, dragging = false;
     // 1st and 2nd arguments are top-left coordinates of the rectangle. 3rd and 4th arguments are its width and height.
     // Our initial view is exactly at the middle of the grid.
     sf::View view(sf::FloatRect(WINDOW_WIDTH * (MULTIPLE / 2), WINDOW_HEIGHT * (MULTIPLE / 2), WINDOW_WIDTH, WINDOW_HEIGHT));
     // Since our initial view is different from the default view, we have to set it before we continue.
     window.setView(view);
 
-    bool getting_input = false;
     if (mode_num == 1) getting_input = true;
     else Patterns::putPatternInGrid(grid, *Patterns::numToPattern[mode_num]); // Pre-defined pattern
 
     sf::Clock timestep_clock, key_press_clock;
-    sf::Vector2f old_view_pos = window.mapPixelToCoords(sf::Mouse::getPosition(window)), new_view_pos;
-    sf::Vector2i last_clicked_cell;
+    sf::Vector2i old_view_pos = sf::Mouse::getPosition(window), new_view_pos, drag_start;
     long long int gen = 0;
+    float zoom = 1;
     while (window.isOpen()){
         sf::Event evnt;
         while (window.pollEvent(evnt)){
@@ -63,8 +64,8 @@ int main(){
                     }
                     break;
 
-                // Because 'isKeyPressed' is "connected" to the actual device, it's getting input even when window is out of focus.
-                // We want to accept keyboard input only when the window has focus, so we have to keep track of it using a boolean.
+                    // Because 'isKeyPressed' is "connected" to the actual device, it's getting input even when window is out of focus.
+                    // We want to accept keyboard input only when the window has focus, so we have to keep track of it using a boolean.
                 case sf::Event::GainedFocus:
                     focus = true;
                     break;
@@ -72,12 +73,31 @@ int main(){
                     focus = false;
                     break;
 
-                // Getting input from mouse.
-                case sf::Event::MouseButtonReleased:
-                    if (getting_input && evnt.mouseButton.button == sf::Mouse::Left && distance(old_view_pos, new_view_pos) <= 0.15 * CELL_SIZE){
-                        last_clicked_cell = handleLeftClick(window, grid);
+                    // Getting input from mouse.
+                case sf::Event::MouseButtonReleased:{
+                    sf::Vector2i pixel_pos = sf::Mouse::getPosition(window);
+                    sf::Vector2i view_pos = static_cast<sf::Vector2i>((window.mapPixelToCoords(pixel_pos)));
+                    if (getting_input && evnt.mouseButton.button == sf::Mouse::Left && distance(drag_start, pixel_pos) <= 2 * CELL_SIZE){
+                        handleLeftClick(window, grid, sf::Vector2i(view_pos.x, view_pos.y));
                     }
+                    dragging = false;
                     break;
+                }
+
+                    case sf::Event::MouseWheelScrolled:
+                        // 'zoom()' is by a factor. a number greater than 1 means zoom-out; a number smaller than 1 means zoom-in.
+                        if (evnt.mouseWheelScroll.delta <= -1) // Scroll down - zoom-out
+                            zoom = std::min(2.0, zoom + 0.1); // By using 'min' with '2', we set it as a lower limit.
+                        else if (evnt.mouseWheelScroll.delta >= 1) // Scroll up - zoom-in
+                            zoom = std::max(0.5, zoom - 0.1); // By using 'max' with '0.5', we set it as an upper limit.
+
+                        // We use 'setSize()' here to reset our view (by setting it to the default view's size).
+                        // Why? Because, as we've said, 'zoom()' is by a factor. So if we zoomed twice we'd be multiplying instead of adding.
+                        // For that we reset the view and then apply the zoom on it.
+                        view.setSize(window.getDefaultView().getSize()); // Reset the size
+                        view.zoom(zoom);
+                        window.setView(view);
+                        break;
 
                 case sf::Event::Resized: {
                     /* By default, when resizing, everything is squeezed/stretched to the new size.
@@ -134,18 +154,19 @@ int main(){
             window.setView(view);
         }
 
-        // TODO: remember to round!
-        new_view_pos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+        // Todo: get in only if focus is true.
+        new_view_pos = sf::Mouse::getPosition(window);
         if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)){
-            /*if (getting_input && ){
-                grid.erase(last_clicked_cell);
-            } */
+            if (!dragging){
+                dragging = true;
+                drag_start = new_view_pos;
+            }
 
-            sf::Vector2f deltaPos = old_view_pos - new_view_pos;
-            view.move(round(deltaPos.x), round(deltaPos.y));
+            sf::Vector2i deltaPos = old_view_pos - new_view_pos;
+            view.move(deltaPos.x, deltaPos.y);
             window.setView(view);
         }
-        old_view_pos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+        old_view_pos = sf::Mouse::getPosition(window);
 
         // Using 'sleep' would lag other events like resizing or restarting the grid (since 'sleep' pauses the entire program for its duration).
         // A better solution is to use 'sf::clock', which lets us check for elapsed time.
@@ -157,7 +178,7 @@ int main(){
             std::cout << "Generation: " << gen << std::endl;
             if (updateGrid(grid)){
                 gen = 0;
-                getting_input = true; // If grid clears itself, we begin to get input again
+                getting_input = true; // If grid clears itself, we begin to get input again.
             }
         }
 

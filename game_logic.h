@@ -33,7 +33,7 @@ public:
 };
 
 short int introduction();
-sf::Vector2i handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
+sf::Vector2i handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, sf::Vector2i view_pos);
 bool updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
 void drawGrid(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
 

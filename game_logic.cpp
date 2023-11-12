@@ -1,6 +1,5 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
-#include <cmath>
 #include <limits>
 #include <unordered_set>
 #include <unordered_map>
@@ -60,7 +59,7 @@ short int introduction(){
     return mode_num;
 }
 
-sf::Vector2i handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
+sf::Vector2i handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, sf::Vector2i view_pos){
     /* Even when changing the view, *the objects themselves always remain in the same place in the "world"*.
     It's like a camera in a video game - it changes our perspective, but doesn't change the world.
     For example, if we click on a certain pixel, move the view (without moving the mouse), and click again,
@@ -74,8 +73,8 @@ sf::Vector2i handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Ve
     If our cursor is on cell (1,1), and we move the view by pressing "D" (right) and "S" (down), and then click;
     We need to a way to "tell SFML" to click on cell (2,2), and not cell (1,1) (which is off-screen now).
     So we use 'mapPixelToCoords()', which takes a literal position on the window, fixes it according to the view, and returns it. */
-    sf::Vector2i pixel_pos = sf::Mouse::getPosition(window); // Pixels are integers
-    sf::Vector2i view_pos = static_cast<sf::Vector2i> (window.mapPixelToCoords(pixel_pos)); // Coordinates can be floats, but we cast to ints
+    //sf::Vector2i pixel_pos = sf::Mouse::getPosition(window); // Pixels are integers
+    //sf::Vector2i view_pos = static_cast<sf::Vector2i> (window.mapPixelToCoords(pixel_pos)); // Coordinates can be floats, but we cast to ints
 
     // We only register clicks inside the grid. Note that we use the grid's width and height, and not the window's, as it contains the window.
     if (0 <= view_pos.x && view_pos.x < GRID_WIDTH && 0 <= view_pos.y && view_pos.y < GRID_HEIGHT){
