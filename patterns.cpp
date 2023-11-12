@@ -1,4 +1,3 @@
-#include <SFML/Graphics.hpp>
 #include <unordered_set>
 #include "game_logic.h"
 

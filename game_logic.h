@@ -12,8 +12,8 @@
 #define CELL_SIZE 30
 #define DEAD_CELL_COLOR sf::Color(128, 128, 128) // Grey
 #define LIVE_CELL_COLOR sf::Color::Red
-#define TIMESTEP sf::milliseconds(500) // Returns an 'sf::Time' object
-#define SPEED (float) 0.2
+#define TIMESTEP sf::milliseconds(70) // Returns an 'sf::Time' object
+#define SPEED 0.25
 
 /* We need to define a custom hash and equal functors for pair type.
  Defining a hash is not enough, since hash functions can have collisions.
@@ -33,8 +33,8 @@ public:
 };
 
 short int introduction();
-sf::Vector2i handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, sf::Vector2i view_pos);
-bool updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
+void handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, sf::Vector2f view_pos);
+void updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
 void drawGrid(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid);
 
 #endif

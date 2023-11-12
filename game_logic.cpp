@@ -59,8 +59,9 @@ short int introduction(){
     return mode_num;
 }
 
-sf::Vector2i handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, sf::Vector2i view_pos){
-    /* Even when changing the view, *the objects themselves always remain in the same place in the "world"*.
+void handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, sf::Vector2f view_pos){
+    /* Regarding 'pixel_pos' and 'view_pos':
+    Even when changing the view, *the objects themselves always remain in the same place in the "world"*.
     It's like a camera in a video game - it changes our perspective, but doesn't change the world.
     For example, if we click on a certain pixel, move the view (without moving the mouse), and click again,
     *SFML would register that as a click on that exact same pixel*.
@@ -73,24 +74,22 @@ sf::Vector2i handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Ve
     If our cursor is on cell (1,1), and we move the view by pressing "D" (right) and "S" (down), and then click;
     We need to a way to "tell SFML" to click on cell (2,2), and not cell (1,1) (which is off-screen now).
     So we use 'mapPixelToCoords()', which takes a literal position on the window, fixes it according to the view, and returns it. */
-    //sf::Vector2i pixel_pos = sf::Mouse::getPosition(window); // Pixels are integers
-    //sf::Vector2i view_pos = static_cast<sf::Vector2i> (window.mapPixelToCoords(pixel_pos)); // Coordinates can be floats, but we cast to ints
+
+    sf::Vector2i view_pos_integer = static_cast<sf::Vector2i>(view_pos);
 
     // We only register clicks inside the grid. Note that we use the grid's width and height, and not the window's, as it contains the window.
-    if (0 <= view_pos.x && view_pos.x < GRID_WIDTH && 0 <= view_pos.y && view_pos.y < GRID_HEIGHT){
+    if (0 <= view_pos_integer.x && view_pos_integer.x < GRID_WIDTH && 0 <= view_pos_integer.y && view_pos_integer.y < GRID_HEIGHT){
         // Converting raw coordinate to cell location in the grid. This is how we get from an exact coordinate to the cell it's in.
-        view_pos.x /= CELL_SIZE;
-        view_pos.y /= CELL_SIZE;
+        view_pos_integer.x /= CELL_SIZE;
+        view_pos_integer.y /= CELL_SIZE;
 
         // We allow selecting and deselecting cells
-        if (grid.count(view_pos)) grid.erase(view_pos);
-        else grid.insert(view_pos);
+        if (grid.count(view_pos_integer)) grid.erase(view_pos_integer);
+        else grid.insert(view_pos_integer);
     }
-
-    return view_pos;
 }
 
-static void addNeighbors(std::unordered_map<sf::Vector2i, int, pair_hash, pair_equal>& m, const sf::Vector2i& coordinate){
+inline void addNeighbors(std::unordered_map<sf::Vector2i, int, pair_hash, pair_equal>& m, const sf::Vector2i& coordinate){
     for (int k = coordinate.y - 1; k <= coordinate.y + 1; k++){
         for (int p = coordinate.x - 1; p <= coordinate.x + 1; p++){
             // Bound checking, so we don't add a cell beyond bounds.
@@ -99,7 +98,7 @@ static void addNeighbors(std::unordered_map<sf::Vector2i, int, pair_hash, pair_e
     }
 }
 
-/* Update the grid to next generation. Returns true iff grid is empty at the *end* of the update.
+/* Update the grid to next generation.
  The algorithm is as follows:
  1) Take the set of lives cells, and for every cell:
  Add itself and its neighbors to the map.
@@ -117,7 +116,7 @@ static void addNeighbors(std::unordered_map<sf::Vector2i, int, pair_hash, pair_e
  Although space was O(1) (because it's about *additional* space, and we did it in-place),
  we still had to rely on an O(n^2) matrix, so overall this algorithm is superior*.
  *With the caveat that a matrix is contiguous in memory, so under certain architecture with certain caches, it might be faster. */
-bool updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
+void updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
     // Maps a coordinate to amount of times it has been added.
     std::unordered_map<sf::Vector2i, int, pair_hash, pair_equal> coordinate_to_amount;
 
@@ -132,8 +131,6 @@ bool updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
 
     // Swap happens in constant time (just rewiring of pointers, not deep copying).
     grid.swap(next_gen_live_cells);
-
-    return grid.empty();
 }
 
 // Draws the grid. Returns true iff grid is blank.
@@ -152,3 +149,20 @@ void drawGrid(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_ha
         }
     }
 }
+
+/*void verifyView(sf::RenderWindow& window, sf::View& view){
+    sf::Vector2f center = view.getCenter();
+    sf::Vector2f view_size = view.getSize();
+
+    double top_limit = center.y - view_size.y / 2;
+    double down_limit = center.y + view_size.y / 2;
+    double left_limit = center.x - view_size.x / 2;
+    double right_limit = center.x + view_size.x / 2;
+
+    int delta_top = std::max(0.0, 0.0 - top_limit);
+    int delta_down = std::min(0.0, WINDOW_HEIGHT - down_limit);
+    int delta_left = std::max(0.0, 0.0 - left_limit);
+    int delta_right = std::min(0.0, WINDOW_WIDTH - right_limit);
+
+    view.move(delta_top + delta_down, delta_left + delta_right);
+} */

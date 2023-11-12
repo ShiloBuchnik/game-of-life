@@ -1,4 +1,4 @@
-![](https://blog.datawrapper.de/wp-content/uploads/2021/06/game-of-life-loop-cropped.gif)
+![](https://s1.gifyu.com/images/SRSuc.gif)
 
 ### This program was written in C++14, utilising SFML, a graphics and multimedia library
 
