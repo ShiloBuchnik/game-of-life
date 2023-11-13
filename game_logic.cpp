@@ -59,13 +59,12 @@ short int introduction(){
     return mode_num;
 }
 
-void handleLeftClick(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, sf::Vector2f view_pos){
+void handleLeftClick(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, const sf::Vector2f& view_pos){
     /* Regarding 'pixel_pos' and 'view_pos':
     Even when changing the view, *the objects themselves always remain in the same place in the "world"*.
     It's like a camera in a video game - it changes our perspective, but doesn't change the world.
     For example, if we click on a certain pixel, move the view (without moving the mouse), and click again,
     *SFML would register that as a click on that exact same pixel*.
-    That is because it remained in the same place in the world, and our view is the only thing that changed.
     So, essentially, we have the location in the real world and the location in the current view.
 
     What we do below is transforming mouse coordinates (which are always the literal pixels on the screen),
@@ -134,12 +133,19 @@ void updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
 }
 
 // Draws the grid. Returns true iff grid is blank.
-void drawGrid(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
+// We ONLY draw the visible view, not the entire grid; so the grid can be as big as we want, without extra runtime costs.
+void drawGrid(sf::RenderWindow& window, const std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, const sf::Vector2i& left_top_view_pos,
+              int window_width, int window_height){
+    // We divide by 'CELL_SIZE' to transform view coordinates to grid ones. We add/subtract 1 to be on the safe side.
+    int top = left_top_view_pos.y / CELL_SIZE - 1, down = (left_top_view_pos.y + window_height) / CELL_SIZE + 1;
+    int left = left_top_view_pos.x / CELL_SIZE - 1, right = (left_top_view_pos.x + window_width) / CELL_SIZE + 1;
+
     sf::RectangleShape cell(sf::Vector2f(CELL_SIZE, CELL_SIZE));
     cell.setOutlineColor(sf::Color(200, 200, 200)); // Beige
     cell.setOutlineThickness(1.25);
-    for (int i = 0; i < GRID_HEIGHT / CELL_SIZE; i++){
-        for (int j = 0; j < GRID_WIDTH / CELL_SIZE; j++){
+
+    for (int i = top; i < down ; i++){
+        for (int j = left; j < right; j++){
             if (grid.count({j,i})) cell.setFillColor(LIVE_CELL_COLOR);
             else cell.setFillColor(DEAD_CELL_COLOR);
 
@@ -149,20 +155,3 @@ void drawGrid(sf::RenderWindow& window, std::unordered_set<sf::Vector2i, pair_ha
         }
     }
 }
-
-/*void verifyView(sf::RenderWindow& window, sf::View& view){
-    sf::Vector2f center = view.getCenter();
-    sf::Vector2f view_size = view.getSize();
-
-    double top_limit = center.y - view_size.y / 2;
-    double down_limit = center.y + view_size.y / 2;
-    double left_limit = center.x - view_size.x / 2;
-    double right_limit = center.x + view_size.x / 2;
-
-    int delta_top = std::max(0.0, 0.0 - top_limit);
-    int delta_down = std::min(0.0, WINDOW_HEIGHT - down_limit);
-    int delta_left = std::max(0.0, 0.0 - left_limit);
-    int delta_right = std::min(0.0, WINDOW_WIDTH - right_limit);
-
-    view.move(delta_top + delta_down, delta_left + delta_right);
-} */

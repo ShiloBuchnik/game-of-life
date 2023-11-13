@@ -9,4 +9,4 @@ Download 'Game of Life' folder and run the .exe file.\
 In the menu you can choose one of 27 pre-defined patterns;\
 or choose "custom pattern", to submit your own by clicking on the GUI (and submit by pressing 'Enter').\
 Now, at any time, you can press 'Enter' to start over with "custom"; or press 'Esc' to quit program.\
-The board is draggable by WASD keys or mouse clicks.
+The board is infinite and draggable by WASD keys or mouse clicks.

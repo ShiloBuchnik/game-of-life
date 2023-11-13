@@ -1,13 +1,8 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <unordered_set>
-#include <cmath>
 #include "game_logic.h"
 #include "patterns.h"
-
-inline float distance(const sf::Vector2i& vec1, const sf::Vector2i& vec2){
-    return sqrt(pow(vec2.x - vec1.x, 2) + pow(vec2.y - vec1.y, 2));
-}
 
 int main(){
     short int mode_num = introduction();
@@ -16,26 +11,25 @@ int main(){
     // Thus, the space complexity reduces from O(n^2) to O(num of live cells).
     std::unordered_set<sf::Vector2i, pair_hash, pair_equal> grid;
 
-    sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Game of life", sf::Style::Default);
+    int window_width = 1440, window_height = 810;
+    sf::RenderWindow window(sf::VideoMode(window_width, window_height), "Game of life", sf::Style::Default);
     bool focus = true; // True iff focus is on window.
     bool getting_input = false, clicking = false, dragging = false;
 
     // left-top coordinate of the view rectangle. We keep track of it, so we can restrict the user from moving the view out of bounds.
-    sf::Vector2i left_top_view(WINDOW_WIDTH * (MULTIPLE / 2), WINDOW_HEIGHT * (MULTIPLE / 2));
+    sf::Vector2i left_top_view_pos(window_width * (MULTIPLE / 2), window_height * (MULTIPLE / 2));
     // 1st and 2nd arguments are left-top coordinate of the rectangle. 3rd and 4th arguments are its width and height respectively.
     // Our initial view is exactly at the middle of the grid.
-    sf::View view(sf::FloatRect(left_top_view.x, left_top_view.y, WINDOW_WIDTH, WINDOW_HEIGHT));
+    sf::View view(sf::FloatRect(left_top_view_pos.x, left_top_view_pos.y, window_width, window_height));
     // Since our initial view is different from the default view, we have to set it before we continue.
     window.setView(view);
 
     if (mode_num == 1) getting_input = true;
     else Patterns::putPatternInGrid(grid, *Patterns::numToPattern[mode_num]); // Pre-defined pattern
 
-    // TODO: fix zoom
     sf::Clock timestep_clock, key_press_clock;
     sf::Vector2i old_pos, click_pos;
     long long int gen = 0;
-    float zoom = 1;
     while (window.isOpen()){
         sf::Event evnt;
         while (window.pollEvent(evnt)){
@@ -99,7 +93,7 @@ int main(){
                     // When dragging, we don't want to click on the board (and changing a cell's color).
                     // So we count it as a click only if the release location (pixel_pos) is close enough to the initial click location (click_pos).
                     if (getting_input && distance(pixel_pos, click_pos) <= CELL_SIZE) {
-                        handleLeftClick(window, grid, view_pos);
+                        handleLeftClick(grid, view_pos);
                     }
                     break;
                 }
@@ -121,13 +115,13 @@ int main(){
 
                     // We don't want to allow the user to drag beyond the grid, so we bound-check and put the result in 'real_delta_pos'.
                     sf::Vector2i real_delta_pos(0,0);
-                    if (0 <= left_top_view.x + delta_pos.x && left_top_view.x + WINDOW_WIDTH + delta_pos.x <= GRID_WIDTH){
+                    if (0 <= left_top_view_pos.x + delta_pos.x && left_top_view_pos.x + window_width + delta_pos.x <= GRID_WIDTH){
                         real_delta_pos.x = delta_pos.x;
-                        left_top_view.x += delta_pos.x;
+                        left_top_view_pos.x += delta_pos.x;
                     }
-                    if (0 <= left_top_view.y + delta_pos.y && left_top_view.y + WINDOW_HEIGHT + delta_pos.y <= GRID_HEIGHT){
+                    if (0 <= left_top_view_pos.y + delta_pos.y && left_top_view_pos.y + window_height + delta_pos.y <= GRID_HEIGHT){
                         real_delta_pos.y = delta_pos.y;
-                        left_top_view.y += delta_pos.y;
+                        left_top_view_pos.y += delta_pos.y;
                     }
                     view.move(real_delta_pos.x, real_delta_pos.y);
                     window.setView(view);
@@ -145,7 +139,8 @@ int main(){
                     focus = false;
                     break;
 
-                /*case sf::Event::MouseWheelScrolled:
+                /* Passing on implementing 'zoom' for now.
+                   case sf::Event::MouseWheelScrolled:
                     // 'zoom()' is by a factor. a number greater than 1 means zoom-out; a number smaller than 1 means zoom-in.
                     if (evnt.mouseWheelScroll.delta <= -1) // Scroll down - zoom-out
                         zoom = std::min(2.0, zoom + 0.1); // By using 'min' with '2', we set it as a lower limit.
@@ -163,15 +158,18 @@ int main(){
                 case sf::Event::Resized: {
                     /* By default, when resizing, everything is squeezed/stretched to the new size.
                     What we want to do is to *keep the top-left corner the same*, and simply extending/reducing the width or height from right or down
-                    just like in a windowed video game.
-
-                    By calling 'mapPixelToCoords(0,0)' we get *the view's* top-left corner.
-                    We pass that same top-left corner with the new width and height to the 'reset()' method.
+                    just like in a windowed video game. We pass that corner with the new width and height to the 'reset()' method.
 
                     If we'd only change the width and height, without keeping the top-left corner the same,
-                    then it would change everytime we'd resize */
-                    sf::Vector2i top_left_view_pos = static_cast<sf::Vector2i> (window.mapPixelToCoords(sf::Vector2i(0, 0)));
-                    view.reset(sf::FloatRect(top_left_view_pos.x, top_left_view_pos.y, evnt.size.width, evnt.size.height));
+                    then it would change everytime we'd resize.
+
+                    We perform bound checking below, as to not show beyond the grid's bound, when resizing close to the edge. */
+                    window_width = evnt.size.width;
+                    window_height = evnt.size.height;
+                    left_top_view_pos.x = std::min(left_top_view_pos.x, GRID_WIDTH - window_width);
+                    left_top_view_pos.y = std::min(left_top_view_pos.y, GRID_HEIGHT - window_height);
+
+                    view.reset(sf::FloatRect(left_top_view_pos.x, left_top_view_pos.y, window_width, window_height));
                     window.setView(view);
                     break;
                 }
@@ -198,30 +196,7 @@ int main(){
         When a line falls between 2 columns of pixels, openGL has to decide on the fly how to render it,
         and that often causes it to flicker when there is movement.
         By rounding the result, we move the view by an integer, and thus always aligning 1:1 with the pixels. */
-        if (focus){
-            // We're not allowing the user to move the view beyond the grid's bounds.
-            int delta_pos = std::round(SPEED * delta_time); // It's in absolute value, we'll add the sign later
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) && 0 <= left_top_view.y - delta_pos){
-                left_top_view.y -= delta_pos;
-                view.move(sf::Vector2f(0, -1 * delta_pos));
-                window.setView(view);
-            }
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) && 0 <= left_top_view.x - delta_pos){
-                left_top_view.x -= delta_pos;
-                view.move(sf::Vector2f(-1 * delta_pos, 0));
-                window.setView(view);
-            }
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S) && left_top_view.y + WINDOW_HEIGHT + delta_pos <= GRID_HEIGHT){
-                left_top_view.y += delta_pos;
-                view.move(sf::Vector2f(0, delta_pos));
-                window.setView(view);
-            }
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) && left_top_view.x + WINDOW_WIDTH + delta_pos <= GRID_WIDTH){
-                left_top_view.x += delta_pos;
-                view.move(sf::Vector2f(delta_pos, 0));
-                window.setView(view);
-            }
-        }
+        if (focus) changeViewWithKeys(window, view, left_top_view_pos, delta_time, window_width, window_height);
 
         /* Using 'sleep' would lag other events like resizing or restarting the grid (since 'sleep' pauses the entire program for its duration).
         A better solution is to use 'sf::clock', which lets us check for elapsed time.
@@ -239,8 +214,10 @@ int main(){
             }
         }
 
-        window.clear();
-        drawGrid(window, grid);
+        window.clear(DEAD_CELL_COLOR);
+        // Note to self: drawing takes almost 100%(!) of the runtime of each iteration. This is the "heaviest" operation.
+        // By drawing only the viewed cells, we've reduced the draw lag tremendously, and made the grid more responsive.
+        drawGrid(window, grid, left_top_view_pos, window_width, window_height);
         window.display();
     }
 
