@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
+#define WINDOW_FRACTION 3/4.0
 #define MULTIPLE 101 // The grid is 'MULTIPLE' times bigger than the initial window size, so that it looks like an "infinite" grid.
 #define GRID_WIDTH 1440 * MULTIPLE
 #define GRID_HEIGHT 810 * MULTIPLE

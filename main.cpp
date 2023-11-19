@@ -1,7 +1,7 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <unordered_set>
-#include <conio.h>
+#include <cmath>
 #include "game_logic.h"
 #include "patterns.h"
 #include "globals.h"
@@ -41,15 +41,14 @@ int main(){
     // We implement the grid using a sparse matrix - which is just a set that stores only the *live cells*.
     // Thus, the space complexity reduces from O(n^2) to O(num of live cells).
     std::unordered_set<sf::Vector2i, pair_hash, pair_equal> grid;
-    bool getting_input = introduction(grid);
+    std::string automaton_name;
+    bool getting_input = introduction(grid, automaton_name);
+    bool save_input = getting_input && handleYNInput(); // True iff we intend to save user's input in .rle file.
 
-    int window_width = 1440, window_height = 810;
+    int window_width = sf::VideoMode::getDesktopMode().width * WINDOW_FRACTION, window_height = sf::VideoMode::getDesktopMode().height * WINDOW_FRACTION;
     sf::RenderWindow window(sf::VideoMode(window_width, window_height), "Game of life", sf::Style::Default);
     bool focus = true; // True iff focus is on window.
-    bool first_input = getting_input; // On the first time the user inputs a pattern, we want to query whether to save it to an .rle file.
-    bool clicking = false, dragging = false, wait = false;
-    // TODO: maybe just ask to save pattern before opening window? It's easier and cleaer.
-    // TODO: Anyway, commit what you did tomorrow so you'd have the version with asking after opening the window.
+    bool clicking = false, dragging = false;
 
     // left-top coordinate of the view rectangle. We keep track of it, so we can restrict the user from moving the view out of bounds.
     sf::Vector2i left_top_view_pos(window_width * (MULTIPLE / 2), window_height * (MULTIPLE / 2));
@@ -59,10 +58,10 @@ int main(){
     // Since our initial view is different from the default view, we have to set it before we continue.
     window.setView(view);
 
-    short int timestep = 350; // By default, we "sleep" for 350ms.
+    short int timestep = 325; // By default, we "sleep" for 325ms.
     sf::Clock timestep_clock, key_press_clock;
     sf::Vector2i old_pos, click_pos;
-    long long int gen = 0;
+    unsigned long long int gen = 0;
     while (window.isOpen()){
         sf::Event evnt;
         while (window.pollEvent(evnt)){
@@ -71,7 +70,6 @@ int main(){
                 case sf::Event::Closed:
                     window.close();
                     return 0;
-                    break;
 
                 case sf::Event::KeyPressed:
                     // The program exits when user presses 'esc'.
@@ -80,17 +78,14 @@ int main(){
                         return 0;
                     }
                     // The grid "restarts" when user presses 'Enter'.
-                    else if (evnt.key.code == sf::Keyboard::Enter && !wait){
+                    else if (evnt.key.code == sf::Keyboard::Enter){
                         if (getting_input){ // Submitting input (finish getting input).
-                            if (first_input){
-                                first_input = false;
-                                wait = true;
-                                std::cout << "Would you like to save this pattern in an .rle file? [Y/N] ";
+                            system("cls"); // Flush previous generations printing.
+                            if (save_input){
+                                save_input = false;
+                                std::cout << "Saved! file path is: " << gridToRLE(grid, automaton_name) << std::endl;
                             }
-                            else{
-                                system("cls"); // Flush introduction or previous generations.
-                                getting_input = false;
-                            }
+                            getting_input = false;
                         }
                         else{ // Resetting grid (start getting input).
                             getting_input = true;
@@ -219,30 +214,6 @@ int main(){
             }
         }
 
-        // 'kbhit()' is a *non-blocking* function that returns true iff stdin is not empty.
-        // In this case, we know that we have a char to get with 'getch()' (which is blocking, and that's why we check with 'kbhit()' before.
-        // Note that using 'isKeyPressed' here won't work, since it doesn't take into account whether we pressed "on" the terminal or not.
-        // TODO: refactor a bit, and add documentation to what you did.
-        if (wait && kbhit()){
-            char YN = getch();
-            fflush(stdin);
-
-            if (YN == 'Y' || YN == 'y'){
-                wait = false;
-                getting_input = false;
-                std::string file_path = gridToRLE(grid);
-                system("cls");
-                std::cout << "Saved! file path is: " << file_path << std::endl;
-            }
-            else if (YN == 'N' || YN == 'n'){
-                wait = false;
-                getting_input = false;
-
-                system("cls");
-            }
-            else std::cout << "\nInvalid input, please try again: ";
-        }
-
         /* Rule of thumb: if we need *real time* and continuous keyboard input, it's better to use 'isKeyPressed' than to rely on events.
         This is because events are polling, while 'isKeyPressed' is "connected" to the actual device.
         If we check keyboard input with event, there's a slight delay, plus there's the OS built-in delay on a long press (like in text editors).
@@ -274,7 +245,7 @@ int main(){
             gen++;
             std::cout << "Generation: " << gen << std::endl;
 
-            updateGrid(grid);
+            updateGrid(grid, automaton_name);
             if (grid.empty()){
                 gen = 0;
                 getting_input = true; // If grid clears itself, we begin to get input again.

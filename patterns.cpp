@@ -14,13 +14,13 @@ inline std::string biggerThan1(unsigned int x){
 /* We want to allow multiple custom files in the directory.
 Filenames in 'custom' directory will be of pattern "custom pattern <int>.rle".
 We search for the minimal one that doesn't already exist. */
-inline std::string findAvailableName(){
+inline std::string findAvailableName(const std::string& automaton_name){
     int index = 0;
     std::string file_path;
 
     do{
         index++;
-        file_path = "patterns\\custom\\custom pattern " + std::to_string(index) + ".rle";
+        file_path = "patterns\\" + automaton_name + "\\custom\\custom pattern " + std::to_string(index) + ".rle";
     }
     while (std::filesystem::exists(file_path));
 
@@ -28,9 +28,11 @@ inline std::string findAvailableName(){
 }
 
 // Takes a grid and creates an .rle file based on its contents.
-std::string gridToRLE(const std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
+std::string gridToRLE(const std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, const std::string& automaton_name){
     std::ofstream rle_file; // write-only
-    std::string available_file_path = findAvailableName();
+    // If a 'custom' directory doesn't exist, it creates it; otherwise, it does nothing.
+    std::filesystem::create_directories("patterns\\" + automaton_name + "\\custom");
+    std::string available_file_path = findAvailableName(automaton_name);
     rle_file.open(available_file_path);
 
     // Edge case
@@ -105,7 +107,7 @@ std::string gridToRLE(const std::unordered_set<sf::Vector2i, pair_hash, pair_equ
 }
 
 
-// Takes an .rle file, parse it and fill 'grid' according to its content.
+// RLE parser: Takes an .rle file and fill 'pattern' according to its content.
 static void RLEToGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& pattern, const std::string& file_path){
     std::ifstream rle_file; // read-only
     rle_file.open(file_path);
@@ -150,7 +152,7 @@ static void RLEToGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& p
 }
 
 inline sf::Vector2i centerOfMass(const std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& pattern){
-    if (pattern.empty()) return {0,0}; // If pattern is empty there is no center of mass.
+    if (pattern.empty()) return {0,0}; // If pattern is empty, then there is no center of mass.
 
     int sum_x = 0, sum_y = 0, cell_amount = pattern.size();
 
