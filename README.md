@@ -1,6 +1,6 @@
 ![](https://s1.gifyu.com/images/SRSuc.gif)
 
-### This program was written in C++14, utilising SFML, a graphics and multimedia library
+### This program was written in C++17, utilising SFML, a graphics and multimedia library
 
 This is a simulation of Game of Life, a cellular automaton devised by John Horton Conway.
 

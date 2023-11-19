@@ -1,20 +1,55 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <unordered_set>
+#include <conio.h>
 #include "game_logic.h"
 #include "patterns.h"
+#include "globals.h"
+
+inline float distance(const sf::Vector2i& vec1, const sf::Vector2i& vec2){
+    return sqrt(pow(vec2.x - vec1.x, 2) + pow(vec2.y - vec1.y, 2));
+}
+
+// Although it's a long function, it gets called every iteration, so dear compiler - please accept my proposal.
+inline void changeViewWithKeys(sf::RenderWindow& window, sf::View& view, sf::Vector2i& left_top_view_pos, int delta_time,
+                               int window_width, int window_height){
+    // We're not allowing the user to move the view beyond the grid's bounds.
+    int delta_pos = std::round(SPEED * delta_time); // It's in absolute value, we'll add the sign later
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) && 0 <= left_top_view_pos.y - delta_pos){
+        left_top_view_pos.y -= delta_pos;
+        view.move(sf::Vector2f(0, -1 * delta_pos));
+        window.setView(view);
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) && 0 <= left_top_view_pos.x - delta_pos){
+        left_top_view_pos.x -= delta_pos;
+        view.move(sf::Vector2f(-1 * delta_pos, 0));
+        window.setView(view);
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S) && left_top_view_pos.y + window_height + delta_pos <= GRID_HEIGHT){
+        left_top_view_pos.y += delta_pos;
+        view.move(sf::Vector2f(0, delta_pos));
+        window.setView(view);
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) && left_top_view_pos.x + window_width + delta_pos <= GRID_WIDTH){
+        left_top_view_pos.x += delta_pos;
+        view.move(sf::Vector2f(delta_pos, 0));
+        window.setView(view);
+    }
+}
 
 int main(){
-    short int mode_num = introduction();
-
     // We implement the grid using a sparse matrix - which is just a set that stores only the *live cells*.
     // Thus, the space complexity reduces from O(n^2) to O(num of live cells).
     std::unordered_set<sf::Vector2i, pair_hash, pair_equal> grid;
+    bool getting_input = introduction(grid);
 
     int window_width = 1440, window_height = 810;
     sf::RenderWindow window(sf::VideoMode(window_width, window_height), "Game of life", sf::Style::Default);
     bool focus = true; // True iff focus is on window.
-    bool getting_input = false, clicking = false, dragging = false;
+    bool first_input = getting_input; // On the first time the user inputs a pattern, we want to query whether to save it to an .rle file.
+    bool clicking = false, dragging = false, wait = false;
+    // TODO: maybe just ask to save pattern before opening window? It's easier and cleaer.
+    // TODO: Anyway, commit what you did tomorrow so you'd have the version with asking after opening the window.
 
     // left-top coordinate of the view rectangle. We keep track of it, so we can restrict the user from moving the view out of bounds.
     sf::Vector2i left_top_view_pos(window_width * (MULTIPLE / 2), window_height * (MULTIPLE / 2));
@@ -24,9 +59,7 @@ int main(){
     // Since our initial view is different from the default view, we have to set it before we continue.
     window.setView(view);
 
-    if (mode_num == 1) getting_input = true;
-    else Patterns::putPatternInGrid(grid, *Patterns::numToPattern[mode_num]); // Pre-defined pattern
-
+    short int timestep = 350; // By default, we "sleep" for 350ms.
     sf::Clock timestep_clock, key_press_clock;
     sf::Vector2i old_pos, click_pos;
     long long int gen = 0;
@@ -46,19 +79,29 @@ int main(){
                         window.close();
                         return 0;
                     }
-
                     // The grid "restarts" when user presses 'Enter'.
-                    if (evnt.key.code == sf::Keyboard::Enter){
-                        if (getting_input){ // Submitting input (finished getting input)
-                            system("cls"); // Deleting previous printing of generations.
-                            getting_input = false;
+                    else if (evnt.key.code == sf::Keyboard::Enter && !wait){
+                        if (getting_input){ // Submitting input (finish getting input).
+                            if (first_input){
+                                first_input = false;
+                                wait = true;
+                                std::cout << "Would you like to save this pattern in an .rle file? [Y/N] ";
+                            }
+                            else{
+                                system("cls"); // Flush introduction or previous generations.
+                                getting_input = false;
+                            }
                         }
-                        else { // Resetting grid (start getting input)
+                        else{ // Resetting grid (start getting input).
                             getting_input = true;
                             grid.clear();
                             gen = 0;
                         }
                     }
+                    // Speed down
+                    else if (evnt.key.code == sf::Keyboard::Z) timestep = std::max(25, timestep - 25);
+                    // Speed up
+                    else if (evnt.key.code == sf::Keyboard::X) timestep = std::min(700, timestep + 25);
                     break;
 
                 /* When left button is pressed, we save cursor position in 'click_pos' and 'old_pos'.
@@ -139,22 +182,6 @@ int main(){
                     focus = false;
                     break;
 
-                /* Passing on implementing 'zoom' for now.
-                   case sf::Event::MouseWheelScrolled:
-                    // 'zoom()' is by a factor. a number greater than 1 means zoom-out; a number smaller than 1 means zoom-in.
-                    if (evnt.mouseWheelScroll.delta <= -1) // Scroll down - zoom-out
-                        zoom = std::min(2.0, zoom + 0.1); // By using 'min' with '2', we set it as a lower limit.
-                    else if (evnt.mouseWheelScroll.delta >= 1) // Scroll up - zoom-in
-                        zoom = std::max(0.5, zoom - 0.1); // By using 'max' with '0.5', we set it as an upper limit.
-
-                    // We use 'setSize()' here to reset our view (by setting it to the default view's size).
-                    // Why? Because, as we've said, 'zoom()' is by a factor. So if we zoomed twice we'd be multiplying instead of adding.
-                    // For that we reset the view and then apply the zoom on it.
-                    view.setSize(window.getDefaultView().getSize()); // Reset the size
-                    view.zoom(zoom);
-                    window.setView(view);
-                    break;*/
-
                 case sf::Event::Resized: {
                     /* By default, when resizing, everything is squeezed/stretched to the new size.
                     What we want to do is to *keep the top-left corner the same*, and simply extending/reducing the width or height from right or down
@@ -173,7 +200,47 @@ int main(){
                     window.setView(view);
                     break;
                 }
+
+                /* Passing on implementing 'zoom' for now.
+                case sf::Event::MouseWheelScrolled:
+                // 'zoom()' is by a factor. a number greater than 1 means zoom-out; a number smaller than 1 means zoom-in.
+                if (evnt.mouseWheelScroll.delta <= -1) // Scroll down - zoom-out
+                    zoom = std::min(2.0, zoom + 0.1); // By using 'min' with '2', we set it as a lower limit.
+                else if (evnt.mouseWheelScroll.delta >= 1) // Scroll up - zoom-in
+                    zoom = std::max(0.5, zoom - 0.1); // By using 'max' with '0.5', we set it as an upper limit.
+
+                // We use 'setSize()' here to reset our view (by setting it to the default view's size).
+                // Why? Because, as we've said, 'zoom()' is by a factor. So if we zoomed twice we'd be multiplying instead of adding.
+                // For that we reset the view and then apply the zoom on it.
+                view.setSize(window.getDefaultView().getSize()); // Reset the size
+                view.zoom(zoom);
+                window.setView(view);
+                break;*/
             }
+        }
+
+        // 'kbhit()' is a *non-blocking* function that returns true iff stdin is not empty.
+        // In this case, we know that we have a char to get with 'getch()' (which is blocking, and that's why we check with 'kbhit()' before.
+        // Note that using 'isKeyPressed' here won't work, since it doesn't take into account whether we pressed "on" the terminal or not.
+        // TODO: refactor a bit, and add documentation to what you did.
+        if (wait && kbhit()){
+            char YN = getch();
+            fflush(stdin);
+
+            if (YN == 'Y' || YN == 'y'){
+                wait = false;
+                getting_input = false;
+                std::string file_path = gridToRLE(grid);
+                system("cls");
+                std::cout << "Saved! file path is: " << file_path << std::endl;
+            }
+            else if (YN == 'N' || YN == 'n'){
+                wait = false;
+                getting_input = false;
+
+                system("cls");
+            }
+            else std::cout << "\nInvalid input, please try again: ";
         }
 
         /* Rule of thumb: if we need *real time* and continuous keyboard input, it's better to use 'isKeyPressed' than to rely on events.
@@ -201,7 +268,7 @@ int main(){
         /* Using 'sleep' would lag other events like resizing or restarting the grid (since 'sleep' pauses the entire program for its duration).
         A better solution is to use 'sf::clock', which lets us check for elapsed time.
         When that elapsed time is bigger than our 'TIMESTEP' duration, we reset the clock and redraw the grid. */
-        if (!getting_input && TIMESTEP <= timestep_clock.getElapsedTime()){
+        if (!getting_input && sf::milliseconds(timestep) <= timestep_clock.getElapsedTime()){
             timestep_clock.restart();
 
             gen++;

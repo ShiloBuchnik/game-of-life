@@ -3,10 +3,13 @@
 #include <limits>
 #include <unordered_set>
 #include <unordered_map>
+#include <filesystem>
 #include "game_logic.h"
+#include "patterns.h"
+#include "globals.h"
 
 // Returns number chosen by user.
-short int introduction(){
+short int introductionn(){
     std::cout << "Welcome to 'game of life'. Below are starting modes:\n" << std::endl;
     std::cout << "1. Custom pattern\n" << std::endl;
 
@@ -59,6 +62,67 @@ short int introduction(){
     return mode_num;
 }
 
+bool introduction(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
+    std::cout << "Welcome to 'game of life'. Below are starting modes:\n" << std::endl;
+    std::cout << "1. Custom pattern\n" << std::endl;
+    std::unordered_map <int, std::string> num_to_pattern_path;
+    int index = 2;
+
+    // TODO: Expand this to enable multiple automata. Based on user choice, we assign 'game of life', 'seeds' etc to 'pattern_dir'
+    std::string patterns_dir = "patterns\\game of life";
+    // 'directory_iterator' is on one hand a container, and on other hand an iterator...very confusing.
+    // Anyway, it stores all the files in given 'dir_path'
+    for (const auto& pattern_type_dir : std::filesystem::directory_iterator(patterns_dir)){ // Iterating over pattern *types*
+        // 'pattern_dir.path()' returns relative path, 'relative()' returns it without the dirname at the start,
+        // 'stem()' stems the file extension, and 'string()', well, returns the string version of the 'path' object.
+        if (std::filesystem::is_empty(pattern_type_dir)) continue; // We don't handle empty directories.
+        std::cout << relative(pattern_type_dir.path(), patterns_dir).stem().string() << " patterns:" << std::endl;
+
+        for (const auto& entry : std::filesystem::directory_iterator(pattern_type_dir)){ // Iterating over patterns themselves
+            if (entry.path().extension().string() != ".rle") continue; // If it's not an RLE file we continue
+
+            std:: cout << index << ". " << relative(entry.path(), pattern_type_dir).stem().string() << std::endl;
+
+            num_to_pattern_path[index] = entry.path().string();
+            index++;
+        }
+        std::cout << "\n";
+    }
+
+    int mode_num;
+    std::cout << "Please enter a mode number: ";
+    std::cin >> mode_num;
+    while (std::cin.fail() || mode_num < 1 || index <= mode_num){
+        std::cout << "Invalid input, please try again: ";
+        std::cin.clear(); // Clears error flag. If it's raised, 'cin' won't get input.
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clears buffer
+        std::cin >> mode_num;
+    }
+    system("cls");
+
+    if (mode_num != 1) putPatternInGrid(grid, num_to_pattern_path[mode_num]);
+
+    return mode_num == 1; // If 'mode_num == 1', that means we're now getting input
+}
+
+void saveInputPattern(const std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
+    char YN;
+    std::cout << "Would you like to save this pattern in an .rle file? [Y/N] ";
+    std::cin >> YN;
+    while (YN != 'Y' && YN != 'y' && YN != 'N' && YN != 'n'){
+        std::cout << "Invalid input, please try again: ";
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cin >> YN;
+    }
+
+    if (YN == 'Y' || YN == 'y'){
+        std::string file_path = gridToRLE(grid);
+        std::cout << "Saved! file path is: " << file_path;
+        sf::sleep(sf::seconds(5)); // Let user see the "Saved!" log before flushing the terminal below.
+    }
+}
+
 void handleLeftClick(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, const sf::Vector2f& view_pos){
     /* Regarding 'pixel_pos' and 'view_pos':
     Even when changing the view, *the objects themselves always remain in the same place in the "world"*.
@@ -97,6 +161,25 @@ inline void addNeighbors(std::unordered_map<sf::Vector2i, int, pair_hash, pair_e
     }
 }
 
+inline void applyRules(const std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid,
+                       const std::unordered_map<sf::Vector2i, int, pair_hash, pair_equal>& m,
+                       std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& new_set){
+    // Game of life
+    for (auto map_pair : m){
+        if (map_pair.second == 3 || (map_pair.second == 4 && grid.count(map_pair.first) == 1)) new_set.insert(map_pair.first);
+    }
+
+    // Seeds
+    //for (auto map_pair : m){
+    //    if (map_pair.second == 2 && grid.count(map_pair.first) == 0) new_set.insert(map_pair.first);
+    //}
+
+    // Life without death
+    //for (auto map_pair : m){
+    //    if (grid.count(map_pair.first) == 1 || map_pair.second == 3) new_set.insert(map_pair.first);
+    //}
+}
+
 /* Update the grid to next generation.
  The algorithm is as follows:
  1) Take the set of lives cells, and for every cell:
@@ -124,9 +207,7 @@ void updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
     }
 
     std::unordered_set<sf::Vector2i, pair_hash, pair_equal> next_gen_live_cells;
-    for (auto map_pair : coordinate_to_amount){
-        if (map_pair.second == 3 || (map_pair.second == 4 && grid.count(map_pair.first))) next_gen_live_cells.insert(map_pair.first);
-    }
+    applyRules(grid, coordinate_to_amount, next_gen_live_cells);
 
     // Swap happens in constant time (just rewiring of pointers, not deep copying).
     grid.swap(next_gen_live_cells);
@@ -134,8 +215,8 @@ void updateGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid){
 
 // Draws the grid. Returns true iff grid is blank.
 // We ONLY draw the visible view, not the entire grid; so the grid can be as big as we want, without extra runtime costs.
-void drawGrid(sf::RenderWindow& window, const std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, const sf::Vector2i& left_top_view_pos,
-              int window_width, int window_height){
+void drawGrid(sf::RenderWindow& window, const std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid,
+              const sf::Vector2i& left_top_view_pos, int window_width, int window_height){
     // We divide by 'CELL_SIZE' to transform view coordinates to grid ones. We add/subtract 1 to be on the safe side.
     int top = left_top_view_pos.y / CELL_SIZE - 1, down = (left_top_view_pos.y + window_height) / CELL_SIZE + 1;
     int left = left_top_view_pos.x / CELL_SIZE - 1, right = (left_top_view_pos.x + window_width) / CELL_SIZE + 1;
