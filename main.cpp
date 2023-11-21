@@ -1,6 +1,8 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
+#include <set>
 #include <unordered_set>
+#include <unordered_map>
 #include <cmath>
 #include "game_logic.h"
 #include "patterns.h"
@@ -11,8 +13,8 @@ inline float distance(const sf::Vector2i& vec1, const sf::Vector2i& vec2){
 }
 
 // Although it's a long function, it gets called every iteration, so dear compiler - please accept my proposal.
-inline void changeViewWithKeys(sf::RenderWindow& window, sf::View& view, sf::Vector2i& left_top_view_pos, int delta_time,
-                               int window_width, int window_height){
+inline void changeViewWithKeys(sf::RenderWindow& window, sf::View& view, sf::Vector2i& left_top_view_pos, const int& delta_time,
+                               const int& window_width, const int& window_height){
     // We're not allowing the user to move the view beyond the grid's bounds.
     int delta_pos = std::round(SPEED * delta_time); // It's in absolute value, we'll add the sign later
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) && 0 <= left_top_view_pos.y - delta_pos){
@@ -38,17 +40,34 @@ inline void changeViewWithKeys(sf::RenderWindow& window, sf::View& view, sf::Vec
 }
 
 int main(){
+    // These maps save, for each automaton, the 'born' and 'survive' group.
+    // We use set and not unordered_set, because amount of elements is very small, and not changing
+    std::unordered_map < std::string, std::set<short int> > map_born =
+            { {"Game of Life", {3}}, {"Life without Death", {3}}, {"HighLife", {3,6}}, {"Day and Night", {3,6,7,8}}, {"Seeds", {2}},
+              {"H-trees", {1}}, {"Replicator", {1,3,5,7}}, {"Live Free or Die", {2}}, {"Serviettes", {2,3,4}}, {"Iceballs", {2,5,6,7,8}},
+              {"DotLife", {3}}, {"Flock", {3}}, {"Maze", {3}}, {"Coral", {3}}, {"Grounded Life", {3,5}}, {"Pseudo Life", {3,5,7}},
+              {"Morley", {3,6,8}} };
+    std::unordered_map < std::string, std::set<short int> > map_survive =
+            { {"Game of Life", {2,3}}, {"Life without Death", {0,1,2,3,4,5,6,7,8}}, {"HighLife", {2,3}}, {"Day and Night", {3,4,6,7,8}},
+              {"Seeds", {}}, {"H-trees", {0,1,2,3,4,5,6,7,8}}, {"Replicator", {1,3,5,7}}, {"Live Free or Die", {0}}, {"Serviettes", {}},
+              {"Iceballs", {5,6,7,8}}, {"DotLife", {0,2,3}}, {"Flock", {1,2}}, {"Maze", {1,2,3,4,5}}, {"Coral", {4,5,6,7,8}},
+              {"Grounded Life", {2,3}}, {"Pseudo Life", {2,3,8}}, {"Morley", {2,4,5}} };
+
+
     // We implement the grid using a sparse matrix - which is just a set that stores only the *live cells*.
     // Thus, the space complexity reduces from O(n^2) to O(num of live cells).
     std::unordered_set<sf::Vector2i, pair_hash, pair_equal> grid;
     std::string automaton_name;
-    bool getting_input = introduction(grid, automaton_name);
-    bool save_input = getting_input && handleYNInput(); // True iff we intend to save user's input in .rle file.
+    bool getting_input = introduction(grid, map_born, map_survive, automaton_name);
+    bool save_input = getting_input && handleYNInput();
+    std::set<short int> born_digits = map_born.at(automaton_name);
+    std::set<short int> survive_digits = map_survive.at(automaton_name);
 
     int window_width = sf::VideoMode::getDesktopMode().width * WINDOW_FRACTION, window_height = sf::VideoMode::getDesktopMode().height * WINDOW_FRACTION;
     sf::RenderWindow window(sf::VideoMode(window_width, window_height), "Game of life", sf::Style::Default);
     bool focus = true; // True iff focus is on window.
     bool clicking = false, dragging = false;
+    sf::Vector2i old_pos, click_pos;
 
     // left-top coordinate of the view rectangle. We keep track of it, so we can restrict the user from moving the view out of bounds.
     sf::Vector2i left_top_view_pos(window_width * (MULTIPLE / 2), window_height * (MULTIPLE / 2));
@@ -60,12 +79,12 @@ int main(){
 
     short int timestep = 325; // By default, we "sleep" for 325ms.
     sf::Clock timestep_clock, key_press_clock;
-    sf::Vector2i old_pos, click_pos;
     unsigned long long int gen = 0;
+
     while (window.isOpen()){
         sf::Event evnt;
         while (window.pollEvent(evnt)){
-            switch(evnt.type){
+            switch (evnt.type){
                 // The program exits when user closes the window by pressing 'X'.
                 case sf::Event::Closed:
                     window.close();
@@ -83,20 +102,19 @@ int main(){
                             system("cls"); // Flush previous generations printing.
                             if (save_input){
                                 save_input = false;
-                                std::cout << "Saved! file path is: " << gridToRLE(grid, automaton_name) << std::endl;
+                                std::cout << "Saved! file path is: " << gridToRLE(grid, born_digits, survive_digits) << std::endl;
                             }
                             getting_input = false;
-                        }
-                        else{ // Resetting grid (start getting input).
+                        } else{ // Resetting grid (start getting input).
                             getting_input = true;
                             grid.clear();
                             gen = 0;
                         }
                     }
-                    // Speed down
-                    else if (evnt.key.code == sf::Keyboard::Z) timestep = std::max(25, timestep - 25);
                     // Speed up
-                    else if (evnt.key.code == sf::Keyboard::X) timestep = std::min(700, timestep + 25);
+                    else if (evnt.key.code == sf::Keyboard::X) timestep = std::max(25, timestep - 25);
+                    // Speed down
+                    else if (evnt.key.code == sf::Keyboard::Z) timestep = std::min(700, timestep + 25);
                     break;
 
                 /* When left button is pressed, we save cursor position in 'click_pos' and 'old_pos'.
@@ -130,7 +148,7 @@ int main(){
                     sf::Vector2f view_pos = (window.mapPixelToCoords(pixel_pos));
                     // When dragging, we don't want to click on the board (and changing a cell's color).
                     // So we count it as a click only if the release location (pixel_pos) is close enough to the initial click location (click_pos).
-                    if (getting_input && distance(pixel_pos, click_pos) <= CELL_SIZE) {
+                    if (getting_input && distance(pixel_pos, click_pos) <= CELL_SIZE){
                         handleLeftClick(grid, view_pos);
                     }
                     break;
@@ -152,7 +170,7 @@ int main(){
                     sf::Vector2i delta_pos = old_pos - new_pos;
 
                     // We don't want to allow the user to drag beyond the grid, so we bound-check and put the result in 'real_delta_pos'.
-                    sf::Vector2i real_delta_pos(0,0);
+                    sf::Vector2i real_delta_pos(0, 0);
                     if (0 <= left_top_view_pos.x + delta_pos.x && left_top_view_pos.x + window_width + delta_pos.x <= GRID_WIDTH){
                         real_delta_pos.x = delta_pos.x;
                         left_top_view_pos.x += delta_pos.x;
@@ -177,9 +195,9 @@ int main(){
                     focus = false;
                     break;
 
-                case sf::Event::Resized: {
+                case sf::Event::Resized:{
                     /* By default, when resizing, everything is squeezed/stretched to the new size.
-                    What we want to do is to *keep the top-left corner the same*, and simply extending/reducing the width or height from right or down
+                    What we want to do is to *keep the top-left corner the same*, and simply extending/reducing the width or height from right or down,
                     just like in a windowed video game. We pass that corner with the new width and height to the 'reset()' method.
 
                     If we'd only change the width and height, without keeping the top-left corner the same,
@@ -245,7 +263,9 @@ int main(){
             gen++;
             std::cout << "Generation: " << gen << std::endl;
 
-            updateGrid(grid, automaton_name);
+            // Note to self: this is the most expensive function in an iteration, and the only one with runtime dependent on amount of live cells.
+            // It takes about 90% of an iteration's runtime.
+            updateGrid(grid, born_digits, survive_digits);
             if (grid.empty()){
                 gen = 0;
                 getting_input = true; // If grid clears itself, we begin to get input again.
@@ -253,8 +273,8 @@ int main(){
         }
 
         window.clear(DEAD_CELL_COLOR);
-        // Note to self: drawing takes almost 100%(!) of the runtime of each iteration. This is the "heaviest" operation.
-        // By drawing only the viewed cells, we've reduced the draw lag tremendously, and made the grid more responsive.
+        // Note to self: in previous versions, drawing took almost 100%(!) of the iteration's runtime, because we drew the *entire grid* every time.
+        // Modifying it to draw only what we view has reduced it to a measly 3-5ms.
         drawGrid(window, grid, left_top_view_pos, window_width, window_height);
         window.display();
     }

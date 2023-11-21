@@ -11,16 +11,27 @@ inline std::string biggerThan1(unsigned int x){
     return 1 < x ? std::to_string(x) : "";
 }
 
+inline void writeRulestringToFile(std::ofstream& rle_file, const std::set <short int>& born_digits, const std::set <short int>& survive_digits){
+    rle_file << "rule = B";
+    for (const auto& digit : born_digits){
+        rle_file << std::to_string(digit);
+    }
+    rle_file << "/S";
+    for (const auto& digit : survive_digits){
+        rle_file << std::to_string(digit);
+    }
+}
+
 /* We want to allow multiple custom files in the directory.
 Filenames in 'custom' directory will be of pattern "custom pattern <int>.rle".
 We search for the minimal one that doesn't already exist. */
-inline std::string findAvailableName(const std::string& automaton_name){
+inline std::string findAvailableName(){
     int index = 0;
     std::string file_path;
 
     do{
         index++;
-        file_path = "patterns\\" + automaton_name + "\\custom\\custom pattern " + std::to_string(index) + ".rle";
+        file_path = "patterns\\custom\\custom pattern " + std::to_string(index) + ".rle";
     }
     while (std::filesystem::exists(file_path));
 
@@ -28,16 +39,19 @@ inline std::string findAvailableName(const std::string& automaton_name){
 }
 
 // Takes a grid and creates an .rle file based on its contents.
-std::string gridToRLE(const std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, const std::string& automaton_name){
+std::string gridToRLE(const std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, const std::set <short int>& born_digits,
+                      const std::set <short int>& survive_digits){
     std::ofstream rle_file; // write-only
-    // If a 'custom' directory doesn't exist, it creates it; otherwise, it does nothing.
-    std::filesystem::create_directories("patterns\\" + automaton_name + "\\custom");
-    std::string available_file_path = findAvailableName(automaton_name);
+    // If 'custom' directory doesn't exist, it creates it; otherwise, it does nothing.
+    std::filesystem::create_directories("patterns\\custom");
+    std::string available_file_path = findAvailableName();
     rle_file.open(available_file_path);
 
     // Edge case
     if (grid.empty()){
-        rle_file << "x = 0, y = 0\n!";
+        rle_file << "x = 0, y = 0, ";
+        writeRulestringToFile(rle_file, born_digits, survive_digits);
+        rle_file << "\n!";
         rle_file.close();
         return available_file_path;
     }
@@ -54,7 +68,10 @@ std::string gridToRLE(const std::unordered_set<sf::Vector2i, pair_hash, pair_equ
 
     int pattern_width = max_x - min_x + 1;
     int pattern_height = (*ordered_grid.rbegin()).y - (*ordered_grid.begin()).y + 1; // We get the height from top-left and down-right corners.
-    rle_file << "x = " + std::to_string(pattern_width) + ", y = " + std::to_string(pattern_height) + "\n";
+    rle_file << "x = " + std::to_string(pattern_width) + ", y = " + std::to_string(pattern_height) + ", ";
+
+    writeRulestringToFile(rle_file, born_digits, survive_digits);
+    rle_file << "\n";
 
     int curr_line = (*ordered_grid.begin()).y, live_cell_streak = 1;
     std::string temp_str;
@@ -156,7 +173,7 @@ inline sf::Vector2i centerOfMass(const std::unordered_set<sf::Vector2i, pair_has
 
     int sum_x = 0, sum_y = 0, cell_amount = pattern.size();
 
-    for (auto cell : pattern){
+    for (const auto& cell : pattern){
         sum_x += cell.x;
         sum_y += cell.y;
     }
@@ -164,6 +181,7 @@ inline sf::Vector2i centerOfMass(const std::unordered_set<sf::Vector2i, pair_has
     return {sum_x / cell_amount, sum_y / cell_amount};
 }
 
+// Takes the pattern from the .rle file specified in 'file_path', and put in center of grid.
 void putPatternInGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, const std::string& file_path){
     /* We can't put the pattern in 'grid' and then modify the elements, since unordered_set's elements are const (if they change, the hash changes).
     And we can't settle for erasing and insert when iterating over 'grid', since doing that will invalidate the iterators.
