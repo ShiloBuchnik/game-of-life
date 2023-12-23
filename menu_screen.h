@@ -5,7 +5,8 @@
 
 class MenuScreen: public BaseScreen{
 protected:
-    // TODO fit in view here. Think if you need left_top_view, or just the view object.
+    // TODO: maybe give up on defining two menu classes, and just create two menu objects?
+
 
     static unsigned long long int handleMenuInput(unsigned long long int upper);
 

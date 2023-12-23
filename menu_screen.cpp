@@ -1,7 +1,7 @@
 #include <limits>
 #include "menu_screen.h"
 
-// Verify that input num is in the range [1, upper).
+// Verifies that input num is in the range [1, upper).
 unsigned long long int MenuScreen::handleMenuInput(unsigned long long int upper){
     unsigned long long int num;
 
