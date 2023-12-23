@@ -11,6 +11,9 @@
 #define DEAD_CELL_COLOR sf::Color(128, 128, 128) // Grey
 #define LIVE_CELL_COLOR sf::Color::Red
 #define SPEED 0.3
+#define SCREENS_AMOUNT 4
+
+enum screens_names {AUTOMATON_MENU_SCREEN, PATTERN_MENU_SCREEN, PATTERN_INPUT_SCREEN, GAME_SCREEN};
 
 // For testing. when called with 'reset=true', it resets and starts counting.
 // When called with 'reset=false', it prints time passed (in ms) since *reset*.

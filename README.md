@@ -13,7 +13,7 @@ A [cellular automaton](https://www.techtarget.com/searchenterprisedesktop/defini
 
 This class is named after **'Game of Life'** (also 'Life'), the most famous cellular automaton, devised by John Horton Conway.
 
-The **rule** of every life-like cellular automaton can be broken down into:
+The **rule** of every Life-like cellular automaton can be broken down into:
 - Amount of neighbors for a _dead_ cell in order for it to be "_born_".
 - Amount of neighbors for a _live_ cell in order for it to "_survive_".
 
@@ -58,7 +58,8 @@ Now, at any time, you can press `Enter` to start over and input your own pattern
 - A `patterns` directory is included in the release, with all the pre-defined patterns, in [.rle format](https://conwaylife.com/wiki/Run_Length_Encoded),  
   divided to sub-directories by [type](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Examples_of_patterns). You can add a pre-defined pattern in 2 ways:
   - Create one with the GUI:  
-    In pattern menu, choose "custom pattern", and you'll be prompted to save your creation in .rle format, in `custom` sub-directory.
+    In pattern menu, choose "custom pattern", and you'll be prompted to save your creation in .rle format,  
+  in `custom` sub-directory.
   - Create an .rle file that contains the pattern, and put it in one of the sub-directories (`custom` is preferable).
 
   Now, next time you'll run the .exe, it will recognize the new pattern.

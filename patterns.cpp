@@ -6,6 +6,32 @@
 #include <unordered_set>
 #include "globals.h"
 
+// The function prints all .rle filenames in 'pattern' directory to screen, and saves them to 'vec'.
+void iterateOverPatternDirectory(std::vector <std::string>& vec){
+    unsigned long long int index = 2;
+
+    // 'directory_iterator' is on one hand a container, and on other hand an iterator...very confusing.
+    // Anyway, it stores all the files in given 'dir_path'.
+    for (const auto& pattern_type_dir : std::filesystem::directory_iterator("patterns")){ // Iterating over pattern *types*.
+        // If it's not a directory, or it's an empty directory, we continue.
+        if (!std::filesystem::is_directory(pattern_type_dir) || std::filesystem::is_empty(pattern_type_dir)) continue;
+        // 'pattern_type_dir.path()' returns relative path, 'relative()' returns it without the dirname at the start,
+        // 'stem()' stems the file extension, and 'string()', well, returns the string version of the 'path' object.
+        std::cout << relative(pattern_type_dir.path(), "patterns").stem().string() << " patterns:" << std::endl;
+
+        for (const auto& entry : std::filesystem::directory_iterator(pattern_type_dir)){ // Iterating over patterns themselves.
+            // If it's not an .rle file, we continue.
+            if (entry.path().extension().string() != ".rle") continue;
+
+            std:: cout << index << ". " << relative(entry.path(), pattern_type_dir).stem().string() << std::endl;
+            vec.push_back(entry.path().string());
+            index++;
+        }
+        std::cout << "\n";
+    }
+}
+
+
 // If 'x' is bigger than 1, returns its string version. Otherwise, returns empty string.
 inline std::string biggerThan1(unsigned int x){
     return 1 < x ? std::to_string(x) : "";
@@ -180,6 +206,7 @@ inline sf::Vector2i centerOfMass(const std::unordered_set<sf::Vector2i, pair_has
 
     return {sum_x / cell_amount, sum_y / cell_amount};
 }
+
 
 // Takes the pattern from the .rle file specified in 'file_path', and put in center of grid.
 void putPatternInGrid(std::unordered_set<sf::Vector2i, pair_hash, pair_equal>& grid, const std::string& file_path){
