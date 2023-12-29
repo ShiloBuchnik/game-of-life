@@ -1,3 +1,66 @@
-#include "base_screen.h"
+#include "screens.h"
 
-BaseGlobalSettings& BaseScreen::base_settings = BaseGlobalSettings::getInstance();
+int BaseScreen::window_width = sf::VideoMode::getDesktopMode().width * WINDOW_FRACTION;
+int BaseScreen::window_height = sf::VideoMode::getDesktopMode().height * WINDOW_FRACTION;
+sf::RenderWindow BaseScreen::window(sf::VideoMode(BaseScreen::window_width, BaseScreen::window_height), "Game of life", sf::Style::Default);
+
+sf::Vector2i BaseScreen::left_top_view_pos(0,0);
+sf::View BaseScreen::view(sf::FloatRect(0, 0, window_width, window_height));
+
+std::set<short int> BaseScreen::born_digits;
+std::set<short int> BaseScreen::survive_digits;
+std::unordered_set<sf::Vector2i, pair_hash, pair_equal> BaseScreen::grid;
+
+sf::Clock BaseScreen::code_timer;
+
+// Game screens share the view, but menu screens don't.
+// The best compromise is to define 'resize()' here, and let it take 'view' and 'left_top_view_pos' as arguments.
+void BaseScreen::resize(const sf::Event& evnt) const{
+    /* By default, when resizing, everything is squeezed/stretched to the new size.
+    What we want to do is to *keep the top-left corner the same*, and simply extending/reducing the width or height from right or down,
+    just like in a windowed video game. We pass that corner with the new width and height to the 'reset()' method.
+
+    If we'd only change the width and height, without keeping the top-left corner the same,
+    then it would change everytime we'd resize.
+
+    We perform bound checking below, as to not show beyond the grid's bound, when resizing close to the edge. */
+    window_width = evnt.size.width;
+    window_height = evnt.size.height;
+    left_top_view_pos.x = std::min(left_top_view_pos.x, grid_width - window_width);
+    left_top_view_pos.y = std::min(left_top_view_pos.y, grid_height - window_height);
+
+    view.reset(sf::FloatRect(left_top_view_pos.x, left_top_view_pos.y, window_width, window_height));
+    window.setView(view);
+}
+
+// For grid: our initial view is exactly at the middle of the grid
+// For menu: our initial view is in the top-left corner of the window
+void BaseScreen::setInitialView(){
+    view = sf::View(sf::FloatRect(left_top_view_pos.x, left_top_view_pos.y, window_width, window_height));
+    // Since our initial view is different from the default view (which is just {0,0,1000,1000}), we have to set it initially
+    window.setView(view);
+}
+
+// For logging. when called with 'reset=true', it resets and starts counting.
+// When called with 'reset=false', it prints time passed (in ms) since *reset*.
+// If we call without ever resetting, it counts since construction of the clock object.
+void BaseScreen::printLogTime(bool reset){
+    if (reset) code_timer.restart();
+    else std::cout << code_timer.getElapsedTime().asMilliseconds() << std::endl;
+}
+
+// Same as above, only it returns the elapsed time instead of printing it.
+long int BaseScreen::getLogTime(bool reset){
+    if (reset){
+        code_timer.restart();
+        return 0;
+    }
+    else return code_timer.getElapsedTime().asMilliseconds();
+}
+
+BaseScreen::BaseScreen(): grid_width(window_width * MULTIPLE), grid_height(window_height * MULTIPLE) {
+    if (!font.loadFromFile("arial.ttf")){
+        std::cerr << "Error loading arial.ttf" << std::endl;
+        exit(-1);
+    }
+}

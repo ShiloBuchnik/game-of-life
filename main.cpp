@@ -1,22 +1,24 @@
 #include <SFML/Graphics.hpp>
-#include "globals.h"
 #include "screens.h"
 
 int main(){
-    std::vector<BaseScreen*> screens(SCREENS_AMOUNT, nullptr);
+    std::vector<BaseScreen*> screens;
     short int curr_screen = 0;
 
     AutomatonMenuScreen screen0;
-    screens[screens_names::AUTOMATON_MENU_SCREEN] = &screen0;
-    PatternMenuScreen screen1;
-    screens[screens_names::PATTERN_MENU_SCREEN] = &screen1;
-    PatternInputScreen screen2;
-    screens[screens_names::PATTERN_INPUT_SCREEN] = &screen2;
-    GameScreen screen3;
-    screens[screens_names::GAME_SCREEN] = &screen3;
+    screens.push_back(&screen0);
+    RulestringMenuScreen screen1;
+    screens.push_back(&screen1);
+    PatternMenuScreen screen2;
+    screens.push_back(&screen2);
+    PatternInputScreen screen3;
+    screens.push_back(&screen3);
+    SaveGridScreen screen4;
+    screens.push_back(&screen4);
+    GameScreen screen5;
+    screens.push_back(&screen5);
 
-    // TODO: maybe need to write for each class a function that resets certain resources?
-    //Main loop
+    // TODO: maybe include specific headers instead of screens.h?
     while (0 <= curr_screen){
         curr_screen = screens[curr_screen]->run();
     }

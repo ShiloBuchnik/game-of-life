@@ -1,40 +1,9 @@
-#include "automaton_menu_screen.h"
-#include "globals.h"
-
-// Verify that inputted born-string and survive-string are formatted properly. We don't demand for them to be sorted.
-// Note that born-strings can't include 0 (like LifeViewer and Golly), since that would light up the entire grid.
-std::set <short int> AutomatonMenuScreen::handleBornSurviveInput(short int start){
-    std::string bs_string;
-    short int max_string_size = 8 - start + 1;
-    std::set <short int> bs_digits;
-
-    std::getline(std::cin, bs_string);
-    for (int i = 0; i < bs_string.size(); i++){
-        short int digit = bs_string[i] - '0';
-
-        // Check digit is in range, that it isn't repeating, and that the born-string isn't longer than allowed.
-        if (bs_digits.count(digit) == 0 && i < max_string_size && start <= digit && digit <= 8){
-            bs_digits.insert(digit);
-        }
-        else{
-            bs_digits.clear();
-            i = -1; // Looping until we get correct input.
-            std::cout << "Invalid input, please try again: ";
-            std::getline(std::cin, bs_string);
-        }
-    }
-
-    return bs_digits;
-}
+#include "screens.h"
 
 AutomatonMenuScreen::AutomatonMenuScreen(){
-    // We want to start from 1, so we put garbage in 0th index.
-    num_to_automaton_name =
-            {"", "Game of Life", "Custom", "Life without Death", "HighLife", "Day and Night", "Seeds", "H-trees", "Replicator", "Live Free or Die",
-             "Serviettes", "Iceballs", "DotLife", "Flock", "Maze", "Coral", "Grounded Life", "Pseudo Life", "Morley"};
-
     map_born =
             {{"Game of Life",       {3}},
+             {"Custom rulestring",   {}},
              {"Life without Death", {3}},
              {"HighLife",           {3, 6}},
              {"Day and Night",      {3, 6, 7, 8}},
@@ -54,6 +23,7 @@ AutomatonMenuScreen::AutomatonMenuScreen(){
 
     map_survive =
             {{"Game of Life",       {2, 3}},
+             {"Custom rulestring",  {}},
              {"Life without Death", {0, 1, 2, 3, 4, 5, 6, 7, 8}},
              {"HighLife",           {2, 3}},
              {"Day and Night",      {3, 4, 6, 7, 8}},
@@ -70,26 +40,123 @@ AutomatonMenuScreen::AutomatonMenuScreen(){
              {"Grounded Life",      {2, 3}},
              {"Pseudo Life",        {2, 3, 8}},
              {"Morley",             {2, 4, 5}}};
+
+    // I want 'Game of life' to be 1st on 'menu_options', and 'Custom' to be 2nd
+    // (they're not first and second in 'map_born', so we do it manually)
+    menu_options.emplace_back("1. Game of Life", font, CHARACTER_SIZE);
+    menu_options.emplace_back("2. Custom rulestring", font, CHARACTER_SIZE);
+    int index = 3;
+    for (const auto& pair : map_born){
+        if (pair.first == "Game of Life" || pair.first == "Custom rulestring") continue;
+        menu_options.emplace_back(std::to_string(index) + ". " + pair.first, font, CHARACTER_SIZE);
+        index++;
+    }
 }
 
 short int AutomatonMenuScreen::run(){
-    for (int i = 1; i < num_to_automaton_name.size(); i++){
-        std::cout << i << ". " << num_to_automaton_name[i] << std::endl;
+    left_top_view_pos = sf::Vector2i(0,0);
+    setInitialView();
+
+    setText();
+    float menu_screen_total_height = menu_options.size() * menu_option_rectangle_height;
+
+    bool hovering = false, focus = true, inside_window;
+    sf::FloatRect hovered_rectangle_size;
+    sf::Text* hovered_menu_option;
+
+    while (true) {
+        // Convert mouse position (if it's inside window) to menu option it hovers above
+        sf::Vector2i pixel_pos = sf::Mouse::getPosition(window);
+        inside_window = 0 <= pixel_pos.x && pixel_pos.x < window_width && 0 <= pixel_pos.y && pixel_pos.y < window_height;
+        sf::Vector2f view_pos = window.mapPixelToCoords(pixel_pos);
+        // If mouse pos isn't inside window, then we assign 'rectangle_index' some arbitrary value as to not segfault
+        int rectangle_index = inside_window ? view_pos.y / menu_option_rectangle_height : 0;
+        sf::Text* menu_option_from_position = &menu_options[rectangle_index];
+        float menu_option_from_position_left = menu_option_from_position->getGlobalBounds().left;
+        float menu_option_from_position_width = menu_option_from_position->getGlobalBounds().width;
+
+        sf::Event evnt;
+        while (window.pollEvent(evnt)){
+            switch (evnt.type){
+                case sf::Event::Closed:
+                    return -1;
+
+                case sf::Event::MouseWheelScrolled:{
+                    float delta = 30 * evnt.mouseWheelScroll.delta;
+
+                    if (0 < delta && left_top_view_pos.y - delta < 0){ // Scroll up beyond bound - we don't allow it
+                        left_top_view_pos.y = 0;
+                    }
+                    else if (delta < 0 && menu_screen_total_height < left_top_view_pos.y + window_height - delta){ // Scroll down beyond bound - we don't allow it
+                        left_top_view_pos.y = menu_screen_total_height - window_height;
+                    }
+                    else{ // Legal scroll
+                        left_top_view_pos.y -= delta;
+                    }
+
+                    view.reset(sf::FloatRect(0, left_top_view_pos.y, window_width, window_height));
+                    window.setView(view);
+                    break;
+                }
+
+                case sf::Event::MouseButtonReleased:{
+                    if (evnt.mouseButton.button != sf::Mouse::Left) break;
+
+                    if (menu_option_from_position_left <= view_pos.x && view_pos.x < menu_option_from_position_left + menu_option_from_position_width){
+                        cursor.loadFromSystem(sf::Cursor::Arrow);
+                        window.setMouseCursor(cursor);
+
+                        std::string automaton_name = menu_option_from_position->getString();
+                        automaton_name = automaton_name.substr(automaton_name.find_last_of('.') + 2); // Removes number at the start
+
+                        hovered_menu_option->setFillColor(option_not_chosen_color); // Reset color of chosen menu option
+
+                        if (rectangle_index != 1){ // Not custom rulestring
+                            born_digits = map_born[automaton_name];
+                            survive_digits = map_survive[automaton_name];
+                            return PATTERN_MENU_SCREEN;
+                        }
+                        else return RULESTRING_MENU_SCREEN;
+                    }
+                    break;
+                }
+
+                case sf::Event::GainedFocus: // TODO: use hasFocus()!
+                    focus = true;
+                    break;
+                case sf::Event::LostFocus:
+                    focus = false;
+                    break;
+
+                case sf::Event::Resized:
+                    resize(evnt);
+                    break;
+            }
+        }
+
+        if (focus && inside_window){
+            if (hovering && !hovered_rectangle_size.contains(view_pos)){ // Un-hover
+                hovering = false;
+                hovered_menu_option->setFillColor(option_not_chosen_color);
+
+                cursor.loadFromSystem(sf::Cursor::Arrow);
+                window.setMouseCursor(cursor);
+            }
+            // Start hovering - only if it's not a directory name
+            else if (menu_option_from_position_left <= view_pos.x && view_pos.x < menu_option_from_position_left + menu_option_from_position_width){
+                menu_option_from_position->setFillColor(option_chosen_color);
+                hovering = true;
+                hovered_rectangle_size = sf::FloatRect(
+                        menu_option_from_position_left, rectangle_index * menu_option_rectangle_height, menu_option_from_position_width, menu_option_rectangle_height);
+                hovered_menu_option = menu_option_from_position;
+
+                cursor.loadFromSystem(sf::Cursor::Hand);
+                window.setMouseCursor(cursor);
+            }
+        }
+
+        window.clear();
+        drawText();
+        window.display();
     }
-
-    std::cout << "Please choose an automaton number: ";
-    automaton_name = num_to_automaton_name[ handleMenuInput(num_to_automaton_name.size()) ];
-    if (automaton_name == "Custom"){
-        std::cin.get(); // In this point there's '\n' in the buffer, and to call 'getline()' properly later, we have to flush it.
-        std::cout << "Please enter born-string (sequence of non-repeating digits in range [1,8]): ";
-        map_born[automaton_name] = handleBornSurviveInput(1);
-        std::cout << "Please enter survive-string (sequence of non-repeating digits in range [0,8]): ";
-        map_survive[automaton_name] = handleBornSurviveInput(0);
-    }
-    system("cls");
-
-    born_digits = map_born.at(automaton_name);
-    survive_digits = map_survive.at(automaton_name);
-
-    return PATTERN_MENU_SCREEN;
 }

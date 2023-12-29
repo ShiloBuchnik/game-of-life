@@ -24,7 +24,7 @@ and a cell survives if it has 2 or 3 neighbors.
 
 ## Available automata
 1. [Game of Life (Life)](https://conwaylife.com/wiki/Conway%27s_Game_of_Life) - Initial patterns tend to evolve into structures that interact in complex and interesting ways.
-2. Custom - User-defined life-life automaton.  
+2. Custom rulestring - User-defined life-life automaton.  
    You'll be prompted to enter the 'born' and 'survive' digits from the rulestring.  
    *When prompted, if you wish to input zero digits, simply press Enter.
 3. [Coral](https://conwaylife.com/wiki/OCA:Coral) - Exploding rule in which patterns grow slowly and form coral-like textures.

@@ -1,29 +1,40 @@
-#include <limits>
-#include "patterns.h"
-#include "pattern_input_screen.h"
-#include "game_logic.h"
+#include "screens.h"
 
-PatternInputScreen::PatternInputScreen(){
-    dragging = false;
-}
+void PatternInputScreen::handleLeftClick(const sf::Vector2i& pixel_pos){
+    /* Regarding 'pixel_pos' and 'view_pos':
+    Even when changing the view, *the objects themselves always remain in the same place in the "world"*.
+    It's like a camera in a video game - it changes our perspective, but doesn't change the world.
+    For example, if we click on a certain pixel, move the view (without moving the mouse), and click again,
+    *SFML would register that as a click on that exact same pixel*.
+    So, essentially, we have the location in the real world and the location in the current view.
 
-// Returns true iff user wants to save pattern to file.
-static bool handleYNInput(){
-    char YN;
-    std::cout << "Would you like to save the pattern in an .rle file? [Y/N] ";
-    std::cin >> YN;
-    while (YN != 'Y' && YN != 'y' && YN != 'N' && YN != 'n'){
-        std::cout << "Invalid input, please try again: ";
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cin >> YN;
+    What we do below is transforming mouse coordinates (which are always the literal pixels on the screen),
+    to the "relative" or "view" coordinates, which compensate for the fact that our view is moved from the real world objects.
+    It's easier to understand with an example:
+    If our cursor is on cell (1,1), and we move the view by pressing "D" (right) and "S" (down), and then click;
+    We need to a way to "tell SFML" to click on cell (2,2), and not cell (1,1) (which is off-screen now).
+    So we use 'mapPixelToCoords()', which takes a literal position on the window, fixes it according to the view, and returns it. */
+
+    sf::Vector2f view_pos = window.mapPixelToCoords(pixel_pos);
+    sf::Vector2i view_pos_integer = static_cast<sf::Vector2i>(view_pos);
+
+    // We only register clicks inside the grid. Note that we use the grid's width and height, and not the window's, as it contains the window.
+    if (0 <= view_pos_integer.x && view_pos_integer.x < grid_width && 0 <= view_pos_integer.y && view_pos_integer.y < grid_height){
+        // Converting raw coordinate to cell location in the grid. This is how we get from an exact coordinate to the cell it's in.
+        view_pos_integer.x /= CELL_SIZE;
+        view_pos_integer.y /= CELL_SIZE;
+
+        // We allow selecting and deselecting cells
+        if (grid.count(view_pos_integer)) grid.erase(view_pos_integer);
+        else grid.insert(view_pos_integer);
     }
-
-    if (YN == 'Y' || YN == 'y') return true;
-    return false;
 }
 
 short int PatternInputScreen::run(){
+    bool clicking = false, dragging = false;
+    sf::Vector2i old_pos, initial_click_pos;
+    sf::Clock key_press_clock;
+
     while (true){
         sf::Event evnt;
         while (window.pollEvent(evnt)){
@@ -33,19 +44,27 @@ short int PatternInputScreen::run(){
                     return -1;
 
                 case sf::Event::KeyPressed:
-                    // The program exits when user presses 'esc'.
-                    if (evnt.key.code == sf::Keyboard::Escape) return -1;
-
-                    // Submitting input
-                    else if (evnt.key.code == sf::Keyboard::Enter){
-                        system("cls"); // Flush previous generations printing.
-                        if (handleYNInput()){
-                            std::cout << "Saved! file path is: " << gridToRLE(grid, born_digits, survive_digits) << std::endl;
-                        }
-                        return GAME_SCREEN;
+                    if (evnt.key.code == sf::Keyboard::Escape){
+                        grid.clear();
+                        return PATTERN_MENU_SCREEN;
                     }
+                        // Submitting input
+                    else if (evnt.key.code == sf::Keyboard::Enter) return SAVE_GRID_SCREEN;
                     break;
 
+                    /* When left button is pressed, we save cursor position in 'initial_click_pos' and 'old_pos'.
+                    They serve different purposes:
+                    'initial_click_pos' - stores location of cursor when clicking.
+                    Because 'old_pos' keeps updating in 'MouseMoved' event, we need this variable to store the initial click location.
+                    'old_pos' - to change the view in 'MouseMoved' event.
+                    In any tiny movement, a 'MouseMoved' event is generated, and in each one we get 'new_pos', and thus - delta movement.
+                    We assign 'new_pos' to 'old_pos' and then start all over when there's another movement.
+                    So old_pos always changes in accordance to our mouse movement.
+                    Basically, what seems like a continuous drag - comprises a *lot* of calls to 'view.move()', each with a tiny delta
+
+                    *Note that, unlike 'KeyPressed' event, that generates multiple events when key is pressed, 'MouseButtonPressed' generates only one.
+                    **Using events to track mouse movements is far smoother than implementing it by yourself with 'isButtonPressed', outside the loop;
+                    mainly because we don't need continuous input (each movement is discrete). */
                 case sf::Event::MouseButtonPressed:
                     if (evnt.mouseButton.button != sf::Mouse::Left) break;
 
@@ -58,10 +77,9 @@ short int PatternInputScreen::run(){
                     if (evnt.mouseButton.button != sf::Mouse::Left) break;
 
                     sf::Vector2i pixel_pos = sf::Vector2i(evnt.mouseButton.x, evnt.mouseButton.y);
-                    sf::Vector2f view_pos = (window.mapPixelToCoords(pixel_pos));
                     // When dragging, we don't want to click on the board (and changing a cell's color).
                     // So we count it as a click only if the release location (pixel_pos) is close enough to the initial click location (initial_click_pos).
-                    if (!dragging) handleLeftClick(grid, view_pos);
+                    if (!dragging) handleLeftClick(pixel_pos);
 
                     dragging = false;
                     clicking = false;
@@ -71,6 +89,7 @@ short int PatternInputScreen::run(){
                 case sf::Event::MouseMoved:{
                     // Process mouse movement only if left button is pressed.
                     if (!clicking) break;
+
                     sf::Vector2i new_pos = sf::Vector2i(evnt.mouseMove.x, evnt.mouseMove.y);
                     /* A human click would sometimes move the mouse a bit, which would generate an unwanted drag.
                     To amend this, we drag only when current cursor position (new_pos) is far enough from the initial click location (initial_click_pos).
@@ -79,54 +98,13 @@ short int PatternInputScreen::run(){
                     if (!dragging && distance(initial_click_pos, new_pos) <= 0.5 * CELL_SIZE) break;
                     else dragging = true;
 
-                    // We subtract 'new_pos' from 'old_pos' (not the other way around) to invert the direction and get the "drag" effect.
-                    // Note we use integers, so we're safe from the flicker (for now).
-                    sf::Vector2i delta_pos = old_pos - new_pos;
-
-                    // We don't want to allow the user to drag beyond the grid, so we bound-check and put the result in 'real_delta_pos'.
-                    sf::Vector2i real_delta_pos(0, 0);
-                    if (0 <= left_top_view_pos.x + delta_pos.x && left_top_view_pos.x + window_width + delta_pos.x <= GRID_WIDTH){
-                        real_delta_pos.x = delta_pos.x;
-                        left_top_view_pos.x += delta_pos.x;
-                    }
-                    if (0 <= left_top_view_pos.y + delta_pos.y && left_top_view_pos.y + window_height + delta_pos.y <= GRID_HEIGHT){
-                        real_delta_pos.y = delta_pos.y;
-                        left_top_view_pos.y += delta_pos.y;
-                    }
-                    view.move(real_delta_pos.x, real_delta_pos.y);
-                    window.setView(view);
-
-                    old_pos = new_pos;
+                    handleDrag(old_pos, new_pos);
                     break;
                 }
 
-                // Because 'isKeyPressed' is "connected" to the actual device, it's getting input even when window is out of focus.
-                // We want to accept keyboard input only when the window has focus, so we have to keep track of it using a boolean.
-                case sf::Event::GainedFocus:
-                    focus = true;
+                case sf::Event::Resized:
+                    resize(evnt);
                     break;
-                case sf::Event::LostFocus:
-                    focus = false;
-                    break;
-
-                case sf::Event::Resized:{
-                    /* By default, when resizing, everything is squeezed/stretched to the new size.
-                    What we want to do is to *keep the top-left corner the same*, and simply extending/reducing the width or height from right or down,
-                    just like in a windowed video game. We pass that corner with the new width and height to the 'reset()' method.
-
-                    If we'd only change the width and height, without keeping the top-left corner the same,
-                    then it would change everytime we'd resize.
-
-                    We perform bound checking below, as to not show beyond the grid's bound, when resizing close to the edge. */
-                    window_width = evnt.size.width;
-                    window_height = evnt.size.height;
-                    left_top_view_pos.x = std::min(left_top_view_pos.x, GRID_WIDTH - window_width);
-                    left_top_view_pos.y = std::min(left_top_view_pos.y, GRID_HEIGHT - window_height);
-
-                    view.reset(sf::FloatRect(left_top_view_pos.x, left_top_view_pos.y, window_width, window_height));
-                    window.setView(view);
-                    break;
-                }
 
                     /* Passing on implementing 'zoom' for now.
                     case sf::Event::MouseWheelScrolled:
@@ -161,17 +139,14 @@ short int PatternInputScreen::run(){
         Now we're dependent only at the *duration of time the key was pressed*!
         This is essentially a normalization, since now we move on the same speed no matter the while loop we're in. */
         int delta_time = key_press_clock.restart().asMilliseconds();
-        /* Note that the product 'SPEED * delta_time' can be a *float*, so moving by it can make the line not align 1:1 with the pixels,
-        because their location is always in integers.
-        When a line falls between 2 columns of pixels, openGL has to decide on the fly how to render it,
-        and that often causes it to flicker when there is movement.
-        By rounding the result, we move the view by an integer, and thus always aligning 1:1 with the pixels. */
-        if (focus) checkForChangeViewWithKeys(delta_time);
+        // Because 'isKeyPressed' is "connected" to the actual device, it's getting input even when window is out of focus.
+        // We want to accept keyboard input only when the window has focus, so we check for it.
+        if (window.hasFocus()) checkForChangeViewWithKeys(delta_time);
 
-        window.clear(DEAD_CELL_COLOR);
+        window.clear(dead_cell_color);
         // Note to self: in previous versions, drawing took almost 100%(!) of the iteration's runtime, because we drew the *entire grid* every time.
         // Modifying it to draw only what we view has reduced it to a measly 3-5ms.
-        drawGrid(window, grid, left_top_view_pos, window_width, window_height);
+        drawGrid();
         window.display();
     }
 }

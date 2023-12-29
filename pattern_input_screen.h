@@ -1,14 +1,13 @@
 #ifndef GAME_OF_LIFE_PATTERN_INPUT_SCREEN_H
 #define GAME_OF_LIFE_PATTERN_INPUT_SCREEN_H
 
-#include "grid_screen.h"
+#include "screens.h"
 
 class PatternInputScreen: public GridScreen{
 private:
-    bool dragging;
-    sf::Vector2i initial_click_pos;
+    void handleLeftClick(const sf::Vector2i& pixel_pos);
+
 public:
-    PatternInputScreen();
     short int run() override;
 };
 
