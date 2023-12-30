@@ -7,10 +7,9 @@
 
 class AutomatonMenuScreen: public MenuScreen{
 private:
-    // These maps save, for each automaton, the 'born' and 'survive' group.
+    // this maps saves, for each automaton, the 'born' (1st in pair) and 'survive' (2nd in pair) sets.
     // We use set and not unordered_set, because amount of elements is very small, and not changing
-    std::unordered_map < std::string, std::set<short int> > map_born;
-    std::unordered_map < std::string, std::set<short int> > map_survive;
+    const std::unordered_map < std::string, std::pair< std::set<short int>, std::set<short int> > > automaton_name_to_born_and_survive_sets;
 
 public:
     AutomatonMenuScreen();

@@ -5,7 +5,7 @@
 
 class PatternInputScreen: public GridScreen{
 private:
-    void handleLeftClick(const sf::Vector2i& pixel_pos);
+    void handleLeftClick(const sf::Vector2i& pixel_pos) const;
 
 public:
     short int run() override;

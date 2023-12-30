@@ -9,7 +9,7 @@ GameScreen::GameScreen(): gen_text("", font, CHARACTER_SIZE) {
 }
 
 // This function adds the Moore neighborhood of every cell (including itself) to the map.
-void GameScreen::addNeighbors(std::unordered_map<sf::Vector2i, short int, pair_hash, pair_equal>& m){
+void GameScreen::addNeighbors(std::unordered_map<sf::Vector2i, short int, pair_hash, pair_equal>& m) const{
     for (const auto& coordinate : grid){
 
         for (int k = coordinate.y - 1; k <= coordinate.y + 1; k++){
@@ -92,10 +92,12 @@ short int GameScreen::run(){
 
                 case sf::Event::KeyPressed:
                     if (evnt.key.code == sf::Keyboard::Escape){
+                        std::cout << "You've stopped the game on the " << gen << " generation" << std::endl;
                         grid.clear();
                         return PATTERN_MENU_SCREEN;
                     }
                     else if (evnt.key.code == sf::Keyboard::Enter){ // Resets game
+                        std::cout << "You've stopped the game on the " << gen << " generation" << std::endl;
                         grid.clear();
                         return PATTERN_INPUT_SCREEN;
                     }
@@ -122,7 +124,6 @@ short int GameScreen::run(){
 
                     sf::Vector2i new_pos = sf::Vector2i(evnt.mouseMove.x, evnt.mouseMove.y);
                     handleDrag(old_pos, new_pos);
-
                     gen_text.setPosition(left_top_view_pos.x, left_top_view_pos.y);
                     break;
                 }
@@ -150,7 +151,11 @@ short int GameScreen::run(){
             // Note to self: this is the most expensive function in an iteration, and the only one with runtime dependent on amount of live cells.
             // It takes about 90% of an iteration's runtime.
             updateGrid();
-            if (grid.empty()) return PATTERN_INPUT_SCREEN; // If grid clears itself, we begin to get input again.
+            if (grid.empty()){ // If grid clears itself, we begin to get input again.
+                std::cout << "This pattern lived for " << gen << " generations." << std::endl;
+
+                return PATTERN_INPUT_SCREEN;
+            }
         }
 
         window.clear(dead_cell_color);

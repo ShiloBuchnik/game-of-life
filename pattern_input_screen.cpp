@@ -1,6 +1,6 @@
 #include "screens.h"
 
-void PatternInputScreen::handleLeftClick(const sf::Vector2i& pixel_pos){
+void PatternInputScreen::handleLeftClick(const sf::Vector2i& pixel_pos) const{
     /* Regarding 'pixel_pos' and 'view_pos':
     Even when changing the view, *the objects themselves always remain in the same place in the "world"*.
     It's like a camera in a video game - it changes our perspective, but doesn't change the world.
@@ -48,23 +48,23 @@ short int PatternInputScreen::run(){
                         grid.clear();
                         return PATTERN_MENU_SCREEN;
                     }
-                        // Submitting input
+                    // Submitting input
                     else if (evnt.key.code == sf::Keyboard::Enter) return SAVE_GRID_SCREEN;
                     break;
 
-                    /* When left button is pressed, we save cursor position in 'initial_click_pos' and 'old_pos'.
-                    They serve different purposes:
-                    'initial_click_pos' - stores location of cursor when clicking.
-                    Because 'old_pos' keeps updating in 'MouseMoved' event, we need this variable to store the initial click location.
-                    'old_pos' - to change the view in 'MouseMoved' event.
-                    In any tiny movement, a 'MouseMoved' event is generated, and in each one we get 'new_pos', and thus - delta movement.
-                    We assign 'new_pos' to 'old_pos' and then start all over when there's another movement.
-                    So old_pos always changes in accordance to our mouse movement.
-                    Basically, what seems like a continuous drag - comprises a *lot* of calls to 'view.move()', each with a tiny delta
+                /* When left button is pressed, we save cursor position in 'initial_click_pos' and 'old_pos'.
+                They serve different purposes:
+                'initial_click_pos' - stores location of cursor when clicking.
+                Because 'old_pos' keeps updating in 'MouseMoved' event, we need this variable to store the initial click location.
+                'old_pos' - to change the view in 'MouseMoved' event.
+                In any tiny movement, a 'MouseMoved' event is generated, and in each one we get 'new_pos', and thus - delta movement.
+                We assign 'new_pos' to 'old_pos' and then start all over when there's another movement.
+                So old_pos always changes in accordance to our mouse movement.
+                Basically, what seems like a continuous drag - comprises a *lot* of calls to 'view.move()', each with a tiny delta
 
-                    *Note that, unlike 'KeyPressed' event, that generates multiple events when key is pressed, 'MouseButtonPressed' generates only one.
-                    **Using events to track mouse movements is far smoother than implementing it by yourself with 'isButtonPressed', outside the loop;
-                    mainly because we don't need continuous input (each movement is discrete). */
+                *Note that, unlike 'KeyPressed' event, that generates multiple events when key is pressed, 'MouseButtonPressed' generates only one.
+                **Using events to track mouse movements is far smoother than implementing it by yourself with 'isButtonPressed', outside the loop;
+                mainly because we don't need continuous input (each movement is discrete). */
                 case sf::Event::MouseButtonPressed:
                     if (evnt.mouseButton.button != sf::Mouse::Left) break;
 

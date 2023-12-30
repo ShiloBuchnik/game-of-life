@@ -8,13 +8,12 @@ private:
     // Saves *parent* path of pattern files, so with 'menu_options' we can get the full file path
     std::vector <std::string> menu_options_pattern_paths;
     std::string chosen_file_path;
-    std::unordered_set<sf::Vector2i, pair_hash, pair_equal> pattern;
+    std::unordered_set<sf::Vector2i, pair_hash, pair_equal> chosen_pattern;
 
-    sf::Vector2i centerOfMass();
+    void iterateOverPatternDirectory();
+    sf::Vector2i centerOfMass() const;
     void RLEToGrid();
     void putPatternInGrid();
-    void iterateOverPatternDirectory();
-
     static void truncateFileNameIfTooLong(sf::Text& text);
 
 public:

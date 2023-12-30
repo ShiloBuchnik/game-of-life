@@ -4,7 +4,7 @@ sf::Color GridScreen::live_cell_color(255, 0, 0); // Red
 sf::Color GridScreen::dead_cell_color(127, 127, 127); // Grey
 sf::Color GridScreen::outline_color(200, 200, 200); // Beige
 
-void GridScreen::checkForChangeViewWithKeys(const int& delta_time){
+void GridScreen::checkForChangeViewWithKeys(const int& delta_time) const{
     /* Note that the product 'SPEED * delta_time' can be a *float*, so moving by it can make the line not align 1:1 with the pixels,
     because their location is always in integers.
     When a line falls between 2 columns of pixels, openGL has to decide on the fly how to render it,

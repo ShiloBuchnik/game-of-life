@@ -18,7 +18,6 @@ int main(){
     GameScreen screen5;
     screens.push_back(&screen5);
 
-    // TODO: maybe include specific headers instead of screens.h?
     while (0 <= curr_screen){
         curr_screen = screens[curr_screen]->run();
     }

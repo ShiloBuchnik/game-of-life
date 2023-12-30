@@ -1,7 +1,9 @@
 ![](https://s5.gifyu.com/images/SRvtL.gif)
 
 # Simulation tool for Life-like cellular automata, including Game of Life
-## It was written in C++17, utilising [SFML](https://www.sfml-dev.org), a graphics and multimedia library
+## A bit on the technical side
+This program is written in C++17, utilising OOP and polymorphic principles.  
+The GUI was created using [SFML](https://www.sfml-dev.org), a graphics and multimedia library.
 
 ## Introduction
 A [cellular automaton](https://www.techtarget.com/searchenterprisedesktop/definition/cellular-automaton) is "Life-like" if it meets the following criteria:

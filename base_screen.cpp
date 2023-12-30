@@ -3,8 +3,10 @@
 int BaseScreen::window_width = sf::VideoMode::getDesktopMode().width * WINDOW_FRACTION;
 int BaseScreen::window_height = sf::VideoMode::getDesktopMode().height * WINDOW_FRACTION;
 sf::RenderWindow BaseScreen::window(sf::VideoMode(BaseScreen::window_width, BaseScreen::window_height), "Game of life", sf::Style::Default);
+sf::Cursor BaseScreen::cursor;
 
 sf::Vector2i BaseScreen::left_top_view_pos(0,0);
+// 1st and 2nd arguments are left-top coordinate of the rectangle. 3rd and 4th arguments are its width and height respectively.
 sf::View BaseScreen::view(sf::FloatRect(0, 0, window_width, window_height));
 
 std::set<short int> BaseScreen::born_digits;
@@ -12,6 +14,13 @@ std::set<short int> BaseScreen::survive_digits;
 std::unordered_set<sf::Vector2i, pair_hash, pair_equal> BaseScreen::grid;
 
 sf::Clock BaseScreen::code_timer;
+
+BaseScreen::BaseScreen(): grid_width(window_width * MULTIPLE), grid_height(window_height * MULTIPLE) {
+    if (!font.loadFromFile("arial.ttf")){
+        std::cerr << "Error loading arial.ttf" << std::endl;
+        exit(-1);
+    }
+}
 
 // Game screens share the view, but menu screens don't.
 // The best compromise is to define 'resize()' here, and let it take 'view' and 'left_top_view_pos' as arguments.
@@ -35,10 +44,17 @@ void BaseScreen::resize(const sf::Event& evnt) const{
 
 // For grid: our initial view is exactly at the middle of the grid
 // For menu: our initial view is in the top-left corner of the window
+// We set that setting 'left_top_view_pos' before calling to this method
 void BaseScreen::setInitialView(){
     view = sf::View(sf::FloatRect(left_top_view_pos.x, left_top_view_pos.y, window_width, window_height));
     // Since our initial view is different from the default view (which is just {0,0,1000,1000}), we have to set it initially
     window.setView(view);
+}
+
+void BaseScreen::centerText(sf::Text& text, float y){
+    // 'left_top_view_pos.x' is in the sum because we need to adjust for current view
+    float x = left_top_view_pos.x + window_width / 2 - text.getGlobalBounds().width / 2; // Putting string exactly at center of screen
+    text.setPosition(x, y);
 }
 
 // For logging. when called with 'reset=true', it resets and starts counting.
@@ -56,11 +72,4 @@ long int BaseScreen::getLogTime(bool reset){
         return 0;
     }
     else return code_timer.getElapsedTime().asMilliseconds();
-}
-
-BaseScreen::BaseScreen(): grid_width(window_width * MULTIPLE), grid_height(window_height * MULTIPLE) {
-    if (!font.loadFromFile("arial.ttf")){
-        std::cerr << "Error loading arial.ttf" << std::endl;
-        exit(-1);
-    }
 }

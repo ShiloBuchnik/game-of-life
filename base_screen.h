@@ -13,13 +13,12 @@
 
 class BaseScreen{
 protected:
-    static sf::Font font;
     static int window_width, window_height;
     static sf::RenderWindow window;
+    static sf::Cursor cursor;
 
     // left-top coordinate of the view rectangle. We keep track of it, so we can restrict the user from moving the view out of bounds.
     static sf::Vector2i left_top_view_pos;
-    // 1st and 2nd arguments are left-top coordinate of the rectangle. 3rd and 4th arguments are its width and height respectively.
     static sf::View view;
 
     static std::set<short int> born_digits;
@@ -31,10 +30,11 @@ protected:
     const int grid_width, grid_height;
 
     static sf::Clock code_timer; // For logging
-    sf::Cursor cursor;
+    sf::Font font;
 
     void resize(const sf::Event& evnt) const;
     static void setInitialView();
+    static void centerText(sf::Text& text, float y);
 
     // For logging
     static void printLogTime(bool reset);

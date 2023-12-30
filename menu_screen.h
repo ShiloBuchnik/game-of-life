@@ -7,21 +7,24 @@
 
 class MenuScreen: public BaseScreen{
 protected:
-    // TODO: maybe give up on defining two menu classes, and just create two menu objects?
     // Depending on the concrete sub class, saves filename itself or automaton name
     std::vector <sf::Text> menu_options;
-    float menu_option_rectangle_height;
+    const float menu_option_rectangle_height;
+    float menu_screen_total_height;
 
     const sf::Color option_chosen_color;
     const sf::Color option_not_chosen_color;
 
-    float getTopAndBottomOfGlyphs();
+    float getTopAndBottomOfGlyphs() const;
+    void handleHover(bool& hovering, int& rectangle_index, std::vector <std::string>* vec, sf::Text*& hovered_menu_option,
+                     sf::FloatRect& hovered_rectangle_bounds);
+    void handleScroll(short int delta) const;
     void setText();
-    void drawText();
+    void drawText() const;
+    static std::string textToString(const sf::Text* text);
 
 public:
     MenuScreen();
-
 };
 
 #endif
