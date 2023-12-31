@@ -1,3 +1,4 @@
+#include <iostream>
 #include "screens.h"
 
 int BaseScreen::window_width = sf::VideoMode::getDesktopMode().width * WINDOW_FRACTION;

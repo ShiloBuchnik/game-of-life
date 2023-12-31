@@ -1,7 +1,5 @@
 #ifndef GAME_OF_LIFE_PAIR_FUNCTORS_H
 #define GAME_OF_LIFE_PAIR_FUNCTORS_H
-#include <SFML/Graphics.hpp>
-#include <iostream>
 
 /* We need to define a custom hash and equal functors for pair type (for unordered_set and unordered_map).
  Defining a hash is not enough, since hash functions can have collisions.

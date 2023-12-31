@@ -1,3 +1,4 @@
+#include <iostream>
 #include "screens.h"
 
 GameScreen::GameScreen(): gen_text("", font, OPTION_CHARACTER_SIZE) {

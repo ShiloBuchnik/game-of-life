@@ -1,8 +1,13 @@
+#include <cmath>
 #include "screens.h"
 
 sf::Color GridScreen::live_cell_color(255, 0, 0); // Red
 sf::Color GridScreen::dead_cell_color(127, 127, 127); // Grey
 sf::Color GridScreen::outline_color(200, 200, 200); // Beige
+
+float GridScreen::distance(const sf::Vector2i& vec1, const sf::Vector2i& vec2){
+    return sqrt(pow(vec2.x - vec1.x, 2) + pow(vec2.y - vec1.y, 2));
+}
 
 void GridScreen::checkForChangeViewWithKeys(const int& delta_time) const{
     /* Note that the product 'SPEED * delta_time' can be a *float*, so moving by it can make the line not align 1:1 with the pixels,
