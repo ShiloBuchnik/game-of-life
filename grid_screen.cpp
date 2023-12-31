@@ -23,12 +23,12 @@ void GridScreen::checkForChangeViewWithKeys(const int& delta_time) const{
         view.move(sf::Vector2f(-1 * delta_pos, 0));
         window.setView(view);
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S) && left_top_view_pos.y + window_height + delta_pos <= grid_width){
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S) && left_top_view_pos.y + window_height + delta_pos <= grid_height){
         left_top_view_pos.y += delta_pos;
         view.move(sf::Vector2f(0, delta_pos));
         window.setView(view);
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) && left_top_view_pos.x + window_width + delta_pos <= grid_height){
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) && left_top_view_pos.x + window_width + delta_pos <= grid_width){
         left_top_view_pos.x += delta_pos;
         view.move(sf::Vector2f(delta_pos, 0));
         window.setView(view);

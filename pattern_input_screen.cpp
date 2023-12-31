@@ -103,7 +103,7 @@ short int PatternInputScreen::run(){
                 }
 
                 case sf::Event::Resized:
-                    resize(evnt);
+                    resize(evnt, grid_height, grid_width);
                     break;
 
                     /* Passing on implementing 'zoom' for now.

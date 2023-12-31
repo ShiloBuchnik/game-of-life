@@ -2,6 +2,19 @@
 #include <fstream>
 #include "screens.h"
 
+void PatternMenuScreen::truncateFileNameIfTooLong(sf::Text& text){
+    std::string text_str = text.getString();
+    size_t i = text_str.size() - 1;
+    for (; 0 <= i; i--){
+        // 100 is an arbitrary number so filenames at screen width wouldn't be allowed
+        if (text.findCharacterPos(i + 1).x < window_width - 100) break;
+    }
+
+    text_str.erase(i + 1, std::string::npos);
+    if (i != text.getString().getSize() - 1) text_str.append("..."); // If we've entered, that means we've truncated
+    text.setString(text_str);
+}
+
 // The function saves all .rle filenames in 'pattern' directory in 'menu_options',
 // and saves the corresponding path to father directory in 'num_to_pattern_path'.
 void PatternMenuScreen::iterateOverPatternDirectory(){
@@ -14,9 +27,9 @@ void PatternMenuScreen::iterateOverPatternDirectory(){
         if (!std::filesystem::is_directory(pattern_type_dir) || std::filesystem::is_empty(pattern_type_dir)) continue;
         // 'pattern_type_dir.path()' returns relative path, 'relative()' returns it without the dirname at the start,
         // 'stem()' stems the file extension, and 'string()', well, returns the string version of the 'path' object.
-        menu_options.emplace_back(relative(pattern_type_dir.path(), "patterns").stem().string() + ":", font, CHARACTER_SIZE);
-        menu_options.back().setFillColor(sf::Color::Magenta);
-        menu_options.back().setStyle(sf::Text::Bold | sf::Text::Underlined);
+        menu_options.emplace_back(relative(pattern_type_dir.path(), "patterns").stem().string() + ":", font, OPTION_CHARACTER_SIZE);
+        menu_options.back().setFillColor(important_color);
+        menu_options.back().setStyle(sf::Text::Bold);
         truncateFileNameIfTooLong(menu_options.back());
         menu_options_pattern_paths.emplace_back("");
 
@@ -24,7 +37,7 @@ void PatternMenuScreen::iterateOverPatternDirectory(){
             // If it's not an .rle file, we continue.
             if (entry.path().extension().string() != ".rle") continue;
 
-            menu_options.emplace_back(std::to_string(index) + ". " + relative(entry.path(), pattern_type_dir).stem().string(), font, CHARACTER_SIZE);
+            menu_options.emplace_back(std::to_string(index) + ". " + relative(entry.path(), pattern_type_dir).stem().string(), font, OPTION_CHARACTER_SIZE);
             truncateFileNameIfTooLong(menu_options.back());
 
             menu_options_pattern_paths.push_back(entry.path().parent_path().string());
@@ -37,7 +50,7 @@ PatternMenuScreen::PatternMenuScreen(){
     // 0th item is "custom pattern", so obviously it has no path.
     // Still writing something, so I can identify pattern directories later.
     menu_options_pattern_paths = {"Custom"};
-    menu_options.emplace_back("1. Input your own custom pattern", font, CHARACTER_SIZE);
+    menu_options.emplace_back("1. Input your own custom pattern", font, OPTION_CHARACTER_SIZE);
 
     // If 'patterns' directory doesn't exist, it creates it; otherwise, it does nothing.
     // Calling 'iterateOverPatternDirectory()' in 'run()' (to reflect changes made to files while the program runs) hurts performance,
@@ -46,8 +59,8 @@ PatternMenuScreen::PatternMenuScreen(){
     std::filesystem::create_directories("patterns");
     iterateOverPatternDirectory();
 
-    setText();
-    menu_screen_total_height = menu_options.size() * menu_option_rectangle_height;
+    menu_title.setString("Pattern Menu");
+    menu_screen_total_height = menu_title_rectangle_height + menu_options.size() * menu_option_rectangle_height;
 }
 
 sf::Vector2i PatternMenuScreen::centerOfMass() const{
@@ -122,7 +135,7 @@ void PatternMenuScreen::putPatternInGrid(){
     sf::Vector2i center_of_mass = centerOfMass();
 
     for (const auto& cell : chosen_pattern){
-        // We shift the pattern to the grid's middle, and shift it to account for center of mass.
+        // We shift the pattern to the grid's center, and shift it to account for its center of mass.
         int x = cell.x + cells_count_x / 2 - center_of_mass.x;
         int y = cell.y + cells_count_y / 2 - center_of_mass.y;
 
@@ -130,23 +143,12 @@ void PatternMenuScreen::putPatternInGrid(){
     }
 }
 
-
-void PatternMenuScreen::truncateFileNameIfTooLong(sf::Text& text){
-    std::string text_str = text.getString();
-    size_t i = text_str.size() - 1;
-    for (; 0 <= i; i--){
-        // 100 is an arbitrary number so the filename at screen width won't be allowed
-        if (text.findCharacterPos(i + 1).x < window_width - 100) break;
-    }
-
-    text_str.erase(i + 1, std::string::npos);
-    if (i != text.getString().getSize() - 1) text_str.append("..."); // If we've entered, that means we've truncated
-    text.setString(text_str);
-}
-
 short int PatternMenuScreen::run(){
+    chosen_pattern.clear();
     left_top_view_pos = sf::Vector2i(0,0);
     setInitialView();
+    setText();
+    setArrows();
 
     bool hovering = false;
     int rectangle_index;
@@ -190,7 +192,8 @@ short int PatternMenuScreen::run(){
 
                     hovered_menu_option->setFillColor(option_not_chosen_color);
 
-                    left_top_view_pos = sf::Vector2i(window_width * (MULTIPLE / 2), window_height * (MULTIPLE / 2));
+                    // Setting so that the exact center of the grid is in the center of the window
+                    left_top_view_pos = sf::Vector2i(grid_width / 2 - window_width / 2, grid_height / 2 - window_height / 2);
                     setInitialView();
 
                     if (rectangle_index != 0){ // Not custom pattern
@@ -201,14 +204,19 @@ short int PatternMenuScreen::run(){
                 }
 
                 case sf::Event::Resized:
-                    resize(evnt);
+                    resize(evnt, menu_screen_total_height);
                     setText();
+                    arrow_down_sprite.setPosition(0, left_top_view_pos.y + window_height - arrow_down_sprite.getGlobalBounds().height);
                     break;
             }
         }
 
         window.clear();
+
         drawText();
+        window.draw(menu_title);
+        drawArrows();
+
         window.display();
     }
 }

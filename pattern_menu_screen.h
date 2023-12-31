@@ -10,11 +10,11 @@ private:
     std::string chosen_file_path;
     std::unordered_set<sf::Vector2i, pair_hash, pair_equal> chosen_pattern;
 
+    static void truncateFileNameIfTooLong(sf::Text& text);
     void iterateOverPatternDirectory();
     sf::Vector2i centerOfMass() const;
     void RLEToGrid();
     void putPatternInGrid();
-    static void truncateFileNameIfTooLong(sf::Text& text);
 
 public:
     PatternMenuScreen();

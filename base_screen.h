@@ -6,16 +6,17 @@
 #include <set>
 #include "pair_functors.h"
 
-#define CHARACTER_SIZE 25
+#define TITLE_CHARACTER_SIZE 35
+#define OPTION_CHARACTER_SIZE 25
 #define WINDOW_FRACTION 0.75
-#define MULTIPLE 101 // The grid is 'MULTIPLE' times bigger than the initial window size, so that it looks like an "infinite" grid.
+#define MULTIPLE 100 // The grid is 'MULTIPLE' times bigger than the initial window size, so that it looks like an "infinite" grid.
 #define CELL_SIZE 30 // Window width and height must divide cell size
 
 class BaseScreen{
 protected:
     static int window_width, window_height;
     static sf::RenderWindow window;
-    static sf::Cursor cursor;
+    static sf::Cursor cursor; // Must not be destroyed throughout the entire use of the window, for some reason
 
     // left-top coordinate of the view rectangle. We keep track of it, so we can restrict the user from moving the view out of bounds.
     static sf::Vector2i left_top_view_pos;
@@ -29,10 +30,11 @@ protected:
     static std::unordered_set<sf::Vector2i, pair_hash, pair_equal> grid;
     const int grid_width, grid_height;
 
+    const sf::Color important_color;
     static sf::Clock code_timer; // For logging
     sf::Font font;
 
-    void resize(const sf::Event& evnt) const;
+    static void resize(const sf::Event& evnt, int width = INT_MAX, int height = INT_MAX);
     static void setInitialView();
     static void centerText(sf::Text& text, float y);
 

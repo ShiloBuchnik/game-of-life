@@ -12,10 +12,10 @@ enum screens_names {AUTOMATON_MENU_SCREEN, RULESTRING_MENU_SCREEN, PATTERN_MENU_
 
 // All concrete screen classes
 #include "automaton_menu_screen.h"
-#include "rulestring_menu_screen.h"
+#include "rulestring_screen.h"
 #include "pattern_menu_screen.h"
 #include "pattern_input_screen.h"
-#include "save_grid_screen.h"
+#include "save_screen.h"
 #include "game_screen.h"
 
 #endif

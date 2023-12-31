@@ -21,23 +21,25 @@ automaton_name_to_born_and_survive_sets{{"Game of Life",           {{3}, {2, 3}}
                                         {"Morley",                 {{3, 6, 8}, {2, 4, 5}} }} {
     // I want 'Game of life' to be 1st on 'menu_options', and 'Custom' to be 2nd
     // (they're not first and second in 'map_born', so we do it manually)
-    menu_options.emplace_back("1. Game of Life", font, CHARACTER_SIZE);
-    menu_options.emplace_back("2. Custom rulestring", font, CHARACTER_SIZE);
+    menu_options.emplace_back("1. Game of Life", font, OPTION_CHARACTER_SIZE);
+    menu_options.emplace_back("2. Custom rulestring", font, OPTION_CHARACTER_SIZE);
 
     int index = 3;
     for (const auto& pair : automaton_name_to_born_and_survive_sets){
         if (pair.first == "Game of Life" || pair.first == "Custom rulestring") continue;
-        menu_options.emplace_back(std::to_string(index) + ". " + pair.first, font, CHARACTER_SIZE);
+        menu_options.emplace_back(std::to_string(index) + ". " + pair.first, font, OPTION_CHARACTER_SIZE);
         index++;
     }
 
-    setText();
-    menu_screen_total_height = menu_options.size() * menu_option_rectangle_height;
+    menu_title.setString("Automaton Menu");
+    menu_screen_total_height = menu_title_rectangle_height + menu_options.size() * menu_option_rectangle_height;
 }
 
 short int AutomatonMenuScreen::run(){
     left_top_view_pos = sf::Vector2i(0,0);
     setInitialView();
+    setText(); // We need to setText() at the start of each 'run()' to adjust if there was a resize in another screen
+    setArrows(); // We need to setArrows() at the start of each 'run()' to reset previous scroll
 
     bool hovering = false;
     int rectangle_index;
@@ -78,14 +80,19 @@ short int AutomatonMenuScreen::run(){
                 }
 
                 case sf::Event::Resized:
-                    resize(evnt);
+                    resize(evnt, menu_screen_total_height);
                     setText();
+                    arrow_down_sprite.setPosition(0, left_top_view_pos.y + window_height - arrow_down_sprite.getGlobalBounds().height);
                     break;
             }
         }
 
         window.clear();
+
         drawText();
+        window.draw(menu_title);
+        drawArrows();
+
         window.display();
     }
 }

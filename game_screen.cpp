@@ -1,6 +1,6 @@
 #include "screens.h"
 
-GameScreen::GameScreen(): gen_text("", font, CHARACTER_SIZE) {
+GameScreen::GameScreen(): gen_text("", font, OPTION_CHARACTER_SIZE) {
     timestep = 325; // By default, we "sleep" for 325ms.
     reserved_size = 500;
 
@@ -37,27 +37,27 @@ void GameScreen::applyRules(const std::unordered_map<sf::Vector2i, short int, pa
 }
 
 /* Update the grid to next generation. The algorithm is as follows:
- 1) Take the set of lives cells (grid), and for every cell:
- Add itself and its neighbors to a map that maps coordinate to number of appearances.
- *Adding *itself* is crucial, for cells without neighbors, for example.
- 2) Iterate over the map s.t. for every coordinate with 'k' appearances:
- If it's live and doesn't fulfill the 'survive' rule - delete it from grid.
- If it's dead and does fulfill the 'burn' rule - insert it to grid.
- *In previous versions, when we only had Game of Life, this is what we did:
- (I'm saving it because I really like this solution; and also because it's my project, and I can do whatever I want):
- "If a cell appears 3 times (has been added 3 times), add it to the new set.
- If a cell appears 4 times *and is live*, add it to the new set.
- The new set is the new generation. Swap it with grid.
- Explanation: in order for a cell to be live in next gen, it needs to be:
- -Live with 2 neighbors or dead with 3 neighbors - in this case it will appear 3 times.
- -Live with 3 neighbors - in this case it will be *live* and appear 4 times."
+1) Take the set of lives cells (grid), and for every cell:
+Add itself and its neighbors to a map that maps coordinate to number of appearances.
+*Adding *itself* is crucial, for cells without neighbors, for example.
+2) Iterate over the map s.t. for every coordinate with 'k' appearances:
+If it's live and doesn't fulfill the 'survive' rule - delete it from grid.
+If it's dead and does fulfill the 'burn' rule - insert it to grid.
+*In previous versions, when we only had Game of Life, this is what we did:
+(I'm saving it because I really like this solution; and also because it's my project, and I can do whatever I want):
+"If a cell appears 3 times (has been added 3 times), add it to the new set.
+If a cell appears 4 times *and is live*, add it to the new set.
+The new set is the new generation. Swap it with grid.
+Explanation: in order for a cell to be live in next gen, it needs to be:
+-Live with 2 neighbors or dead with 3 neighbors - in this case it will appear 3 times.
+-Live with 3 neighbors - in this case it will be *live* and appear 4 times."
 
- Let's denote p = number of live cells. So:
- Time complexity: O(9p + 9p)=O(p). Space complexity: O(9p + 9p)=O(p).
- This is a lot more efficient than our previous algorithm, which was in time O(n^2) and space O(1).
- Although space was O(1) (because it's about *additional* space, and we did it in-place),
- we still had to rely on an O(n^2) matrix, so overall this algorithm is superior*.
- *With the caveat that a matrix is contiguous in memory, so under certain architecture with certain caches, it might be faster. */
+Let's denote p = number of live cells. So:
+Time complexity: O(9p + 9p)=O(p). Space complexity: O(9p + 9p)=O(p).
+This is a lot more efficient than our previous algorithm, which was in time O(n^2) and space O(1).
+Although space was O(1) (because it's about *additional* space, and we did it in-place),
+we still had to rely on an O(n^2) matrix, so overall this algorithm is superior*.
+*With the caveat that a matrix is contiguous in memory, so under certain architecture with certain caches, it might be faster. */
 void GameScreen::updateGrid(){
     // Maps a coordinate to amount of times it has been added.
     std::unordered_map<sf::Vector2i, short int, pair_hash, pair_equal> coordinate_to_amount;
@@ -129,7 +129,7 @@ short int GameScreen::run(){
                 }
 
                 case sf::Event::Resized:
-                    resize(evnt);
+                    resize(evnt, grid_height, grid_width);
                     break;
             }
         }

@@ -8,13 +8,16 @@ Basically, because SFML is giving me a hard time, we need to iterate over all th
 so that we can give this height to the rectangle that contains each menu option.
 It's a bit complicated, best to read in this thread:
 https://en.sfml-dev.org/forums/index.php?topic=29332.0 */
-float MenuScreen::getTopAndBottomOfGlyphs() const{
+float MenuScreen::getTopAndBottomOfGlyphs(int baseline){
+    sf::Font temp_font;
+    if (!temp_font.loadFromFile("resources/arial.ttf")) exit(-1);
+
     float max_height = 0;
     for (int i = 0; i < 128; i++){
-        sf::Glyph glyph = font.getGlyph(i, CHARACTER_SIZE, false);
+        sf::Glyph glyph = temp_font.getGlyph(i, baseline, false);
         sf::FloatRect glyph_bounds = glyph.bounds; // The bounds are relative to the baseline, so we transform them below
 
-        float curr_top = glyph_bounds.top + CHARACTER_SIZE;
+        float curr_top = glyph_bounds.top + baseline;
         max_height = std::max(max_height, curr_top + glyph_bounds.height);
     }
 
@@ -23,7 +26,24 @@ float MenuScreen::getTopAndBottomOfGlyphs() const{
 
 MenuScreen::MenuScreen():
 option_chosen_color(sf::Color::Red), option_not_chosen_color(sf::Color::White),
-menu_option_rectangle_height(getTopAndBottomOfGlyphs() + DISTANCE) { } // DISTANCE here is like vertical padding inside the rectangle
+menu_title("", font, TITLE_CHARACTER_SIZE),
+menu_title_rectangle_height(getTopAndBottomOfGlyphs(TITLE_CHARACTER_SIZE) + DISTANCE),
+menu_option_rectangle_height(getTopAndBottomOfGlyphs(OPTION_CHARACTER_SIZE) + DISTANCE) { // DISTANCE here is like vertical padding inside the rectangle
+    menu_title.setFillColor(important_color);
+    menu_title.setStyle(sf::Text::Bold | sf::Text::Underlined);
+
+    if (!arrow_up_texture.loadFromFile("resources/up.png")) exit(-1);
+    arrow_up_texture.setSmooth(true);
+    arrow_up_sprite.setTexture(arrow_up_texture);
+    arrow_up_sprite.setScale(0.1, 0.1);
+
+    if (!arrow_down_texture.loadFromFile("resources/down.png")) exit(-1);
+    arrow_down_texture.setSmooth(true);
+    arrow_down_sprite.setTexture(arrow_down_texture);
+    arrow_down_sprite.setScale(0.1, 0.1);
+
+    setArrows();
+}
 
 /* This function is used by PatternMenuScreen and AutomatonMenuScreen, and they have slightly different needs, so it's a bit convoluted;
 but it's worth it, in order to reduce code duplication and to encapsulate.
@@ -50,9 +70,11 @@ void MenuScreen::handleHover(bool& hovering, int& rectangle_index, std::vector <
         }
     }
     else{
-        bool inside_menu = 0 <= pixel_pos.x && pixel_pos.x < window_width && 0 <= pixel_pos.y && pixel_pos.y < menu_screen_total_height;
+        // Note that we shift in 'menu_title_rectangle_height' downward, to compensate for the title text.
+        bool inside_menu = 0 <= view_pos.x && view_pos.x < window_width &&
+                menu_title_rectangle_height <= view_pos.y && view_pos.y < menu_screen_total_height;
         if (!inside_menu) return;
-        rectangle_index = view_pos.y / menu_option_rectangle_height;
+        rectangle_index = (view_pos.y - menu_title_rectangle_height) / menu_option_rectangle_height;
         // For PatternMenuScreen - we don't hover if we're on a directory name
         if (pattern_menu_screen_container && (*pattern_menu_screen_container)[rectangle_index].empty()) return;
 
@@ -65,7 +87,7 @@ void MenuScreen::handleHover(bool& hovering, int& rectangle_index, std::vector <
             hovered_menu_option->setFillColor(option_chosen_color);
             // We create our own rectangle, *as to use our own top and height* (and not GlobalBounds),
             // as to create the illusion that the menu options are directly "stacked above each other"
-            hovered_rectangle_bounds = sf::FloatRect(hovered_menu_option_left, rectangle_index * menu_option_rectangle_height,
+            hovered_rectangle_bounds = sf::FloatRect(hovered_menu_option_left, menu_title_rectangle_height + rectangle_index * menu_option_rectangle_height,
                                                    hovered_menu_option_width, menu_option_rectangle_height);
 
             cursor.loadFromSystem(sf::Cursor::Hand);
@@ -74,7 +96,7 @@ void MenuScreen::handleHover(bool& hovering, int& rectangle_index, std::vector <
     }
 }
 
-void MenuScreen::handleScroll(short int delta) const{
+void MenuScreen::handleScroll(short int delta){
     delta *= 6 * DISTANCE;
 
     if (0 < delta && left_top_view_pos.y - delta < 0){ // Scroll up beyond bound - we don't allow it
@@ -88,13 +110,16 @@ void MenuScreen::handleScroll(short int delta) const{
         left_top_view_pos.y -= delta;
     }
 
+    setArrows();
     view.reset(sf::FloatRect(0, left_top_view_pos.y, window_width, window_height));
     window.setView(view);
 }
 
 // Making sure to truncate (if needed) filenames, and setting the Text objects in a list in the middle of the screen
 void MenuScreen::setText(){
-    float height = 0;
+    centerText(menu_title, 0);
+
+    float height = menu_title_rectangle_height; // Start positioning options right below title
     for (auto& menu_option : menu_options){
         centerText(menu_option, height);
         height += menu_option_rectangle_height;
@@ -112,6 +137,18 @@ void MenuScreen::drawText() const{
             window.draw(menu_options.at(i));
         } catch (std::out_of_range& exc) {}
     }
+}
+
+void MenuScreen::setArrows(){
+    arrow_up_sprite.setPosition(0, left_top_view_pos.y);
+    arrow_down_sprite.setPosition(0, left_top_view_pos.y + window_height - arrow_down_sprite.getGlobalBounds().width);
+}
+
+void MenuScreen::drawArrows() const{
+    if (menu_screen_total_height <= window_height) return;
+
+    if (0 < left_top_view_pos.y) window.draw(arrow_up_sprite);
+    if (left_top_view_pos.y + window_height < menu_screen_total_height) window.draw(arrow_down_sprite);
 }
 
 std::string MenuScreen::textToString(const sf::Text* text){
