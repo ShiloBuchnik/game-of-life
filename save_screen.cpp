@@ -2,7 +2,7 @@
 #include <fstream>
 #include "screens.h"
 
-SaveGridScreen::SaveGridScreen(): live_cell_diff(128, 0, 0, 192), dead_cell_diff(64, 64, 64, 192), outline_diff(100, 100, 100, 192) {
+SaveScreen::SaveScreen(): live_cell_diff(128, 0, 0, 192), dead_cell_diff(64, 64, 64, 192), outline_diff(100, 100, 100, 192) {
     save_prompt = sf::Text("Would you like to save this pattern in an .rle file? [Y/N] ", font, OPTION_CHARACTER_SIZE + 10);
     save_prompt.setFillColor(important_color);
 }
@@ -40,7 +40,7 @@ inline std::string findAvailableName(){
 }
 
 // Takes a grid and creates an .rle file based on its contents.
-std::string SaveGridScreen::gridToRLE(){
+std::string SaveScreen::gridToRLE(){
     std::ofstream rle_file; // write-only
     // If 'custom' directory doesn't exist, it creates it; otherwise, it does nothing.
     std::filesystem::create_directories("patterns\\custom");
@@ -123,7 +123,7 @@ std::string SaveGridScreen::gridToRLE(){
     return available_file_path;
 }
 
-void SaveGridScreen::dimOrBrightenScreen() const{
+void SaveScreen::dimOrBrightenScreen() const{
     static bool is_dim = false;
 
     if (is_dim){
@@ -140,8 +140,9 @@ void SaveGridScreen::dimOrBrightenScreen() const{
     is_dim = !is_dim;
 }
 
-short int SaveGridScreen::run(){
-    centerText(save_prompt, left_top_view_pos.y + window_height / 4 - save_prompt.getGlobalBounds().height / 2);
+short int SaveScreen::run(){
+    save_prompt.setScale(zoom, zoom);
+    centerText(save_prompt, left_top_view_pos.y + view.getSize().y / 4 - save_prompt.getGlobalBounds().height / 2);
 
     dimOrBrightenScreen();
 
@@ -156,22 +157,19 @@ short int SaveGridScreen::run(){
                     if (evnt.key.code == sf::Keyboard::Escape){
                         dimOrBrightenScreen();
                         grid.clear();
+                        zoom = 1;
                         return PATTERN_MENU_SCREEN;
                     }
-                    break;
-
-                case sf::Event::TextEntered:
-                    if (evnt.text.unicode == 'y' || evnt.text.unicode == 'Y' || evnt.text.unicode == 'n' || evnt.text.unicode == 'N'){
-                        if (evnt.text.unicode == 'y' || evnt.text.unicode == 'Y') gridToRLE();
-
+                    else if (evnt.key.code == sf::Keyboard::Y || evnt.key.code == sf::Keyboard::N){
+                        if (evnt.key.code == sf::Keyboard::Y) gridToRLE();
                         dimOrBrightenScreen();
                         return GAME_SCREEN;
                     }
                     break;
 
                 case sf::Event::Resized:
-                    resize(evnt, grid_height, grid_width);
-                    centerText(save_prompt, left_top_view_pos.y + window_height / 4 - save_prompt.getGlobalBounds().height / 2);
+                    resize(evnt);
+                    centerText(save_prompt, left_top_view_pos.y + view.getSize().y / 4 - save_prompt.getGlobalBounds().height / 2);
 
                     break;
             }

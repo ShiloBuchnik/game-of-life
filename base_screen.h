@@ -9,17 +9,17 @@
 #define TITLE_CHARACTER_SIZE 35
 #define OPTION_CHARACTER_SIZE 25
 #define WINDOW_FRACTION 0.75
-#define MULTIPLE 100 // The grid is 'MULTIPLE' times bigger than the initial window size, so that it looks like an "infinite" grid.
+#define MULTIPLE 100// The grid is 'MULTIPLE' times bigger than the initial window size, so that it looks like an "infinite" grid.
 #define CELL_SIZE 30 // Window width and height must divide cell size
 
 class BaseScreen{
 protected:
-    static int window_width, window_height;
+    //static int window_width, window_height;
     static sf::RenderWindow window;
     static sf::Cursor cursor; // Must not be destroyed throughout the entire use of the window, for some reason
 
     // left-top coordinate of the view rectangle. We keep track of it, so we can restrict the user from moving the view out of bounds.
-    static sf::Vector2i left_top_view_pos;
+    static sf::Vector2f left_top_view_pos;
     static sf::View view;
 
     static std::set<short int> born_digits;
@@ -34,13 +34,13 @@ protected:
     static sf::Clock code_timer; // For logging
     sf::Font font;
 
-    static void resize(const sf::Event& evnt, int width = INT_MAX, int height = INT_MAX);
     static void setInitialView();
-    static void centerText(sf::Text& text, float y);
+    static void centerText(sf::Text& text, int y);
+    static void resize(const sf::Event& evnt, int height = INT_MAX);
 
     // For logging
     static void printLogTime(bool reset);
-    static long int getLogTime(bool reset);
+    static long long int getLogTime(bool reset);
 
 public:
     BaseScreen();

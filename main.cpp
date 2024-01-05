@@ -12,7 +12,7 @@ int main(){
     screens.push_back(&screen2);
     PatternInputScreen screen3;
     screens.push_back(&screen3);
-    SaveGridScreen screen4;
+    SaveScreen screen4;
     screens.push_back(&screen4);
     GameScreen screen5;
     screens.push_back(&screen5);

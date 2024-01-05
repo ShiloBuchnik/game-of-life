@@ -4,6 +4,7 @@
 ## A bit on the technical side
 This program is written in C++17, utilising OOP and polymorphic principles.  
 The GUI was created using [SFML](https://www.sfml-dev.org), a graphics and multimedia library.
+It only supports Windows currently.
 
 ## Introduction to cellular automata
 A [cellular automaton](https://www.techtarget.com/searchenterprisedesktop/definition/cellular-automaton) is "Life-like" if it meets the following criteria:
@@ -59,6 +60,7 @@ Also, at any time you can press `Esc` to return to previous menu and change auto
 ## Functionalities
 - The board is infinite, resizable and draggable by mouse clicks and `WASD` keys.
 - You can speed up the simulation by pressing `X`, or speed down by pressing `Z`.
+- You can zoom-in and zoom-out on the grid by scrolling the mouse wheel.
 - A `patterns` directory is included in the release, with all the pre-defined patterns, in [.rle format](https://conwaylife.com/wiki/Run_Length_Encoded),  
   divided to sub-directories by [type](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Examples_of_patterns). You can add a pre-defined pattern in 2 ways:
   - Create one with the GUI:  

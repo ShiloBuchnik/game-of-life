@@ -46,6 +46,7 @@ short int PatternInputScreen::run(){
                 case sf::Event::KeyPressed:
                     if (evnt.key.code == sf::Keyboard::Escape){
                         grid.clear();
+                        zoom = 1;
                         return PATTERN_MENU_SCREEN;
                     }
                     // Submitting input
@@ -76,6 +77,7 @@ short int PatternInputScreen::run(){
                 case sf::Event::MouseButtonReleased:{
                     if (evnt.mouseButton.button != sf::Mouse::Left) break;
 
+                    // It makes for smoother UX if we take position again, instead of using 'initial_click_pos'
                     sf::Vector2i pixel_pos = sf::Vector2i(evnt.mouseButton.x, evnt.mouseButton.y);
                     // When dragging, we don't want to click on the board (and changing a cell's color).
                     // So we count it as a click only if the release location (pixel_pos) is close enough to the initial click location (initial_click_pos).
@@ -87,8 +89,7 @@ short int PatternInputScreen::run(){
                 }
 
                 case sf::Event::MouseMoved:{
-                    // Process mouse movement only if left button is pressed.
-                    if (!clicking) break;
+                    if (!clicking) break; // Process mouse movement only if left button is pressed.
 
                     sf::Vector2i new_pos = sf::Vector2i(evnt.mouseMove.x, evnt.mouseMove.y);
                     /* A human click would sometimes move the mouse a bit, which would generate an unwanted drag.
@@ -103,24 +104,12 @@ short int PatternInputScreen::run(){
                 }
 
                 case sf::Event::Resized:
-                    resize(evnt, grid_height, grid_width);
+                    resize(evnt);
                     break;
 
-                    /* Passing on implementing 'zoom' for now.
-                    case sf::Event::MouseWheelScrolled:
-                    // 'zoom()' is by a factor. a number greater than 1 means zoom-out; a number smaller than 1 means zoom-in.
-                    if (evnt.mouseWheelScroll.delta <= -1) // Scroll down - zoom-out
-                        zoom = std::min(2.0, zoom + 0.1); // By using 'min' with '2', we set it as a lower limit.
-                    else if (evnt.mouseWheelScroll.delta >= 1) // Scroll up - zoom-in
-                        zoom = std::max(0.5, zoom - 0.1); // By using 'max' with '0.5', we set it as an upper limit.
-
-                    // We use 'setSize()' here to reset our view (by setting it to the default view's size).
-                    // Why? Because, as we've said, 'zoom()' is by a factor. So if we zoomed twice we'd be multiplying instead of adding.
-                    // For that we reset the view and then apply the zoom on it.
-                    view.setSize(window.getDefaultView().getSize()); // Reset the size
-                    view.zoom(zoom);
-                    window.setView(view);
-                    break;*/
+                case sf::Event::MouseWheelScrolled:
+                    handleZoom(evnt.mouseWheelScroll.delta);
+                    break;
             }
         }
 
@@ -138,7 +127,7 @@ short int PatternInputScreen::run(){
         The solution is to use 'delta_time' to measure the time between iterations, and multiplying by 'SPEED', to get *length* by which we move.
         Now we're dependent only at the *duration of time the key was pressed*!
         This is essentially a normalization, since now we move on the same speed no matter the while loop we're in. */
-        int delta_time = key_press_clock.restart().asMilliseconds();
+        long long int delta_time = key_press_clock.restart().asMicroseconds();
         // Because 'isKeyPressed' is "connected" to the actual device, it's getting input even when window is out of focus.
         // We want to accept keyboard input only when the window has focus, so we check for it.
         if (window.hasFocus()) checkForChangeViewWithKeys(delta_time);

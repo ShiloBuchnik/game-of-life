@@ -36,14 +36,14 @@ automaton_name_to_born_and_survive_sets{{"Game of Life",           {{3}, {2, 3}}
 }
 
 short int AutomatonMenuScreen::run(){
-    left_top_view_pos = sf::Vector2i(0,0);
+    left_top_view_pos = sf::Vector2f(0,0);
     setInitialView();
     setText(); // We need to setText() at the start of each 'run()' to adjust if there was a resize in another screen
     setArrows(); // We need to setArrows() at the start of each 'run()' to reset previous scroll
 
     bool hovering = false;
     int rectangle_index;
-    sf::FloatRect hovered_rectangle_bounds;
+    sf::IntRect hovered_rectangle_bounds;
     sf::Text* hovered_menu_option;
 
     while (true) {
@@ -82,7 +82,7 @@ short int AutomatonMenuScreen::run(){
                 case sf::Event::Resized:
                     resize(evnt, menu_screen_total_height);
                     setText();
-                    arrow_down_sprite.setPosition(0, left_top_view_pos.y + window_height - arrow_down_sprite.getGlobalBounds().height);
+                    arrow_down_sprite.setPosition(0, left_top_view_pos.y + window.getSize().y - arrow_down_sprite.getGlobalBounds().height);
                     break;
             }
         }

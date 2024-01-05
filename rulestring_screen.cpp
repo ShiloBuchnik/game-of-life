@@ -7,7 +7,7 @@ born_prompt(initial_born_prompt_str, font, OPTION_CHARACTER_SIZE + 5),
 survive_prompt(initial_survive_prompt_str, font, OPTION_CHARACTER_SIZE + 5) { }
 
 short int RulestringMenuScreen::run(){
-    centerText(born_prompt, window_height / 4 - born_prompt.getGlobalBounds().height / 2);
+    centerText(born_prompt, window.getSize().y / 4 - born_prompt.getGlobalBounds().height / 2);
     centerText(survive_prompt, born_prompt.getGlobalBounds().top + born_prompt.getGlobalBounds().height + DISTANCE * 5);
 
     // We start filling born_prompt, then move on to survive_prompt

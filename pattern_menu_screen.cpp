@@ -8,7 +8,7 @@ void PatternMenuScreen::truncateFileNameIfTooLong(sf::Text& text){
     size_t i = text_str.size() - 1;
     for (; 0 <= i; i--){
         // 100 is an arbitrary number so filenames at screen width wouldn't be allowed
-        if (text.findCharacterPos(i + 1).x < window_width - 100) break;
+        if (text.findCharacterPos(i + 1).x < window.getSize().x - 100) break;
     }
 
     text_str.erase(i + 1, std::string::npos);
@@ -146,14 +146,14 @@ void PatternMenuScreen::putPatternInGrid(){
 
 short int PatternMenuScreen::run(){
     chosen_pattern.clear();
-    left_top_view_pos = sf::Vector2i(0,0);
+    left_top_view_pos = sf::Vector2f(0.f,0.f);
     setInitialView();
     setText();
     setArrows();
 
     bool hovering = false;
     int rectangle_index;
-    sf::FloatRect hovered_rectangle_bounds;
+    sf::IntRect hovered_rectangle_bounds;
     sf::Text* hovered_menu_option = &menu_options[0];
 
     while (true) {
@@ -194,7 +194,7 @@ short int PatternMenuScreen::run(){
                     hovered_menu_option->setFillColor(option_not_chosen_color);
 
                     // Setting so that the exact center of the grid is in the center of the window
-                    left_top_view_pos = sf::Vector2i(grid_width / 2 - window_width / 2, grid_height / 2 - window_height / 2);
+                    left_top_view_pos = sf::Vector2f(grid_width / 2 - window.getSize().x / 2, grid_height / 2 - window.getSize().y / 2);
                     setInitialView();
 
                     if (rectangle_index != 0){ // Not custom pattern
@@ -207,7 +207,7 @@ short int PatternMenuScreen::run(){
                 case sf::Event::Resized:
                     resize(evnt, menu_screen_total_height);
                     setText();
-                    arrow_down_sprite.setPosition(0, left_top_view_pos.y + window_height - arrow_down_sprite.getGlobalBounds().height);
+                    arrow_down_sprite.setPosition(0, left_top_view_pos.y + window.getSize().y - arrow_down_sprite.getGlobalBounds().height);
                     break;
             }
         }

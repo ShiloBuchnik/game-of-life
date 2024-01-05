@@ -3,7 +3,7 @@
 
 #include "screens.h"
 
-class SaveGridScreen: public GridScreen{
+class SaveScreen: public GridScreen{
 private:
     sf::Text save_prompt;
     const sf::Color live_cell_diff, dead_cell_diff, outline_diff; // The color diffs enable us to dim the screen
@@ -12,7 +12,7 @@ private:
     void dimOrBrightenScreen() const;
 
 public:
-    SaveGridScreen();
+    SaveScreen();
     short int run() override;
 };
 

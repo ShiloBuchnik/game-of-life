@@ -82,19 +82,24 @@ short int GameScreen::run(){
 
     unsigned long long gen = 0;
     gen_text.setString("gen: 0");
+    gen_text.setScale(zoom, zoom); // 'zoom' might have changed in previous screen, so we need to 'setScale()' first
     gen_text.setPosition(left_top_view_pos.x, left_top_view_pos.y);
+
+    long long int sum = 0, iter_num = 0;
 
     while (true){
         sf::Event evnt;
         while (window.pollEvent(evnt)){
             switch (evnt.type){
                 case sf::Event::Closed:
+                    std::cout << sum / iter_num << std::endl;
                     return -1;
 
                 case sf::Event::KeyPressed:
                     if (evnt.key.code == sf::Keyboard::Escape){
                         std::cout << "You've stopped the game on the " << gen << " generation" << std::endl;
                         grid.clear();
+                        zoom = 1;
                         return PATTERN_MENU_SCREEN;
                     }
                     else if (evnt.key.code == sf::Keyboard::Enter){ // Resets game
@@ -102,8 +107,8 @@ short int GameScreen::run(){
                         grid.clear();
                         return PATTERN_INPUT_SCREEN;
                     }
-                    else if (evnt.key.code == sf::Keyboard::X) timestep = std::max(25, timestep - 25); // Speed up
-                    else if (evnt.key.code == sf::Keyboard::Z) timestep = std::min(700, timestep + 25); // Speed down
+                    else if (evnt.key.code == sf::Keyboard::X) timestep = std::max<short int>(25, timestep - 25); // Speed up
+                    else if (evnt.key.code == sf::Keyboard::Z) timestep = std::min<short int>(700, timestep + 25); // Speed down
                     break;
 
                 case sf::Event::MouseButtonPressed:
@@ -130,7 +135,12 @@ short int GameScreen::run(){
                 }
 
                 case sf::Event::Resized:
-                    resize(evnt, grid_height, grid_width);
+                    resize(evnt);
+                    break;
+
+                case sf::Event::MouseWheelScrolled:
+                    handleZoom(evnt.mouseWheelScroll.delta);
+                    gen_text.setScale(zoom, zoom);
                     break;
             }
         }
@@ -158,6 +168,10 @@ short int GameScreen::run(){
                 return PATTERN_INPUT_SCREEN;
             }
         }
+
+        sum += getLogTime(false);
+        getLogTime(true);
+        iter_num++;
 
         window.clear(dead_cell_color);
         drawGrid();
