@@ -55,7 +55,7 @@ void BaseScreen::resize(const sf::Event& evnt, int height){
 // If we call without ever resetting, it counts since construction of the clock object.
 void BaseScreen::printLogTime(bool reset){
     if (reset) code_timer.restart();
-    else std::cout << code_timer.getElapsedTime().asMicroseconds() << std::endl;
+    else std::cout << code_timer.getElapsedTime().asMilliseconds() << std::endl;
 }
 
 // Same as above, only it returns the elapsed time instead of printing it.
@@ -64,5 +64,5 @@ long long int BaseScreen::getLogTime(bool reset){
         code_timer.restart();
         return 0;
     }
-    else return code_timer.getElapsedTime().asMicroseconds();
+    else return code_timer.getElapsedTime().asMilliseconds();
 }

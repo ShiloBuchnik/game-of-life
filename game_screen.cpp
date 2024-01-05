@@ -85,14 +85,11 @@ short int GameScreen::run(){
     gen_text.setScale(zoom, zoom); // 'zoom' might have changed in previous screen, so we need to 'setScale()' first
     gen_text.setPosition(left_top_view_pos.x, left_top_view_pos.y);
 
-    long long int sum = 0, iter_num = 0;
-
     while (true){
         sf::Event evnt;
         while (window.pollEvent(evnt)){
             switch (evnt.type){
                 case sf::Event::Closed:
-                    std::cout << sum / iter_num << std::endl;
                     return -1;
 
                 case sf::Event::KeyPressed:
@@ -168,10 +165,6 @@ short int GameScreen::run(){
                 return PATTERN_INPUT_SCREEN;
             }
         }
-
-        sum += getLogTime(false);
-        getLogTime(true);
-        iter_num++;
 
         window.clear(dead_cell_color);
         drawGrid();

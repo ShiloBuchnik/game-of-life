@@ -2,9 +2,9 @@
 
 # Simulation tool for Life-like cellular automata, including Game of Life
 ## A bit on the technical side
-This program is written in C++17, utilising OOP and polymorphic principles.  
-The GUI was created using [SFML](https://www.sfml-dev.org), a graphics and multimedia library.
-It only supports Windows currently.
+This program is written in C++17, incorporating OOP and polymorphic principles.  
+The GUI is developed using [SFML](https://www.sfml-dev.org), a graphics and multimedia library.  
+The program currently only supports Windows.
 
 ## Introduction to cellular automata
 A [cellular automaton](https://www.techtarget.com/searchenterprisedesktop/definition/cellular-automaton) is "Life-like" if it meets the following criteria:
@@ -53,19 +53,16 @@ Download the release, and run the `game of life.exe`.
 Choose the automaton to simulate, or create a custom one with your own rulestring.  
 Then, you can choose one of 100+ pre-defined patterns; or choose "**custom pattern**",  
 to input your own by clicking on the GUI (and submit by pressing `Enter`).  
-You'll then be prompted to save your creation in .rle format.  
+You'll then be prompted to save your creation in [.rle format](https://conwaylife.com/wiki/Run_Length_Encoded).  
 Now, at any time, you can press `Enter` to reset the board and input your own pattern again.  
 Also, at any time you can press `Esc` to return to previous menu and change automaton/pattern.
 
 ## Functionalities
 - The board is infinite, resizable and draggable by mouse clicks and `WASD` keys.
-- You can speed up the simulation by pressing `X`, or speed down by pressing `Z`.
-- You can zoom-in and zoom-out on the grid by scrolling the mouse wheel.
-- A `patterns` directory is included in the release, with all the pre-defined patterns, in [.rle format](https://conwaylife.com/wiki/Run_Length_Encoded),  
-  divided to sub-directories by [type](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Examples_of_patterns). You can add a pre-defined pattern in 2 ways:
-  - Create one with the GUI:  
-    In pattern menu, choose "custom pattern", and you'll be prompted to save your creation in .rle format,  
-  in `custom` sub-directory.
-  - Take an .rle file that contains the pattern, and put it in one of the sub-directories (`custom` is preferable).
-
-  Now, next time you'll run the .exe, it will recognize the new pattern.
+- Zoom-in and zoom-out on the grid by scrolling the mouse wheel.
+- Speed up the simulation by pressing `X`, or speed down by pressing `Z`.
+- You can create a custom pattern with the GUI and export it to an .rle file, saved in `patterns/custom`.
+- You can import an existing .rle file to the program, by putting it in `patterns/custom`.  
+  Next time you'll run the .exe, it will recognize the newly exported/imported files.
+- A `patterns` directory with pre-defined patterns, in .rle format, is included in the release.  
+  It is divided to sub-directories by [type](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Examples_of_patterns).
